@@ -4,7 +4,7 @@
 
 The system admins need to prepare **App Server 3** for application deployment with the following requirements:
 
-1. Install and configure **Nginx** on **App Server 3**
+1. Install and configure **Nginx** on **App Server **
 2. Move the self-signed SSL certificate and key from `/tmp/nautilus.crt` and `/tmp/nautilus.key` to appropriate locations and deploy them in Nginx
 3. Create an `index.html` file under Nginx document root with content **"Welcome!"**
 4. Verify accessibility from jump host using `curl -Ik https://<app-server-ip>/`
@@ -13,451 +13,363 @@ The system admins need to prepare **App Server 3** for application deployment wi
 
 💡 **Note:** You can find the infrastructure details by clicking on the **Details of all Users and Servers** button on the top-right section of the page.
 
----
+# Nginx HTTPS Configuration on App Server 1 (Stratos Datacenter)
 
-## 🔹 Step 1: Connect to App Server 3
+## Project Overview
 
-```bash
-ssh banner@stapp03
-sudo su -
-```
+This project documents the steps required to prepare **App Server 1** in the **Stratos Datacenter** for application deployment.
 
-**Purpose**: Connect to App Server 3 as the banner user and switch to root for administrative tasks.
+The tasks include:
 
----
-
-## 🔹 Step 2: Verify SSL certificate files
-
-```bash
-cd /tmp
-ls -la
-```
-
-**Purpose**: Verify that the SSL certificate and key files are present in the temporary directory.
-
-**Expected Files**:
-```
--rw-r--r-- 1 root root 1234 Mar 15 10:30 nautilus.crt
--rw------- 1 root root 5678 Mar 15 10:30 nautilus.key
-```
-
-**File Verification**:
-```bash
-file nautilus.crt nautilus.key
-```
+* Installing Nginx web server
+* Configuring SSL using an existing self-signed certificate
+* Deploying the SSL certificate and key
+* Creating a default web page
+* Testing HTTPS access from the jump host
 
 ---
 
-## 🔹 Step 3: Check OS version and install Nginx
+# Prerequisites
 
-```bash
-cat /etc/os-release
-yum install nginx -y  
+Before starting, make sure:
+
+* You have SSH access to the jump host.
+* You can connect to App Server 1.
+* The SSL certificate and key exist:
+
+```
+/tmp/nautilus.crt
+/tmp/nautilus.key
 ```
 
-**Purpose**: Check the operating system version and install Nginx web server.
-
-**For Ubuntu/Debian systems**:
-```bash
-apt-get update
-apt-get install nginx -y
-```
-
-**Package Installation**: 📦 This installs Nginx with default configuration and SSL module support.
+* Required privileges are available using `sudo`.
 
 ---
 
-## 🔹 Step 4: Start and verify Nginx service
+# Step 1: Connect to App Server 1
+
+From the jump host, connect to App Server 1.
 
 ```bash
-systemctl start nginx
-systemctl status nginx
+ssh <app-server-user>@<app-server-hostname>
 ```
 
-**Purpose**: Start the Nginx service and verify it's running properly.
+### Explanation
 
-**Expected Output**:
-```
-● nginx.service - The nginx HTTP and reverse proxy server
-   Loaded: loaded
-   Active: active (running)
-   Main PID: 1234 (nginx)
-```
+* `ssh` is used to securely connect to a remote Linux server.
+* Replace `<app-server-user>` with the provided username.
+* Replace `<app-server-hostname>` with the App Server 1 hostname.
 
-**Enable for auto-start**:
+Example:
+
 ```bash
-systemctl enable nginx
+ssh user@app-server-1
 ```
 
 ---
 
-## 🔹 Step 5: Move SSL certificate files to standard locations make sure to cd /tls
+# Step 2: Install Nginx
+
+## For RHEL/CentOS Based Systems
+
+Update package information:
 
 ```bash
-mv /tmp/nautilus.crt /etc/pki/tls/certs/
-mv /tmp/nautilus.key /etc/pki/tls/private/
+sudo yum update -y
 ```
 
-**Purpose**: Move SSL certificate and key files to their standard system locations for security and organization.
+Install Nginx:
 
-**Directory Creation** (if needed):
 ```bash
-mkdir -p /etc/pki/tls/certs /etc/pki/tls/private
+sudo yum install nginx -y
 ```
 
-**Verify file placement**:
+## For Ubuntu/Debian Based Systems
+
+Update package information:
+
 ```bash
-ls -l /etc/pki/tls/certs/ | grep nautilus.crt
-ls -l /etc/pki/tls/private/ | grep nautilus.key
+sudo apt update
+```
+
+Install Nginx:
+
+```bash
+sudo apt install nginx -y
+```
+
+### Explanation
+
+* `yum` and `apt` are package managers used to install software.
+* `nginx` is the web server that will host the application.
+* `-y` automatically confirms installation prompts.
+
+---
+
+# Step 3: Start and Enable Nginx Service
+
+Enable Nginx to start automatically after reboot:
+
+```bash
+sudo systemctl enable nginx
+```
+
+Start Nginx:
+
+```bash
+sudo systemctl start nginx
+```
+
+Check Nginx status:
+
+```bash
+sudo systemctl status nginx
+```
+
+### Explanation
+
+* `systemctl` manages Linux services.
+* `enable` configures automatic startup.
+* `start` runs the service immediately.
+* `status` verifies whether the service is running.
+
+---
+
+# Step 4: Create SSL Certificate Directory
+
+Create a dedicated directory for SSL files:
+
+```bash
+sudo mkdir -p /etc/nginx/ssl
+```
+
+### Explanation
+
+* `/etc/nginx` stores Nginx configuration files.
+* `/etc/nginx/ssl` stores SSL certificates securely.
+* `mkdir -p` creates the directory even if parent directories do not exist.
+
+---
+
+# Step 5: Move SSL Certificate and Key
+
+Move the certificate:
+
+```bash
+sudo mv /tmp/nautilus.crt /etc/nginx/ssl/
+```
+
+Move the private key:
+
+```bash
+sudo mv /tmp/nautilus.key /etc/nginx/ssl/
+```
+
+Set secure permissions on the private key:
+
+```bash
+sudo chmod 600 /etc/nginx/ssl/nautilus.key
+```
+
+### Explanation
+
+* `mv` moves files from one location to another.
+* SSL certificates should be stored outside temporary directories.
+* The private key must have restricted permissions to prevent unauthorized access.
+
+After moving, files should exist:
+
+```
+/etc/nginx/ssl/nautilus.crt
+/etc/nginx/ssl/nautilus.key
 ```
 
 ---
 
-## 🔹 Step 6: Set proper permissions on SSL files
+# Step 6: Configure Nginx for HTTPS
+
+Create an SSL configuration file:
 
 ```bash
-chmod 644 /etc/pki/tls/certs/nautilus.crt
-chmod 600 /etc/pki/tls/private/nautilus.key
+sudo vi /etc/nginx/conf.d/ssl.conf
 ```
 
-**Purpose**: Set appropriate permissions for SSL files - certificate readable, private key secure.
-
-**Security Note**: 🔐 Private key should only be readable by root (600 permissions).
-
----
-
-## 🔹 Step 7: Configure Nginx for SSL 
-
-```bash
-vi /etc/nginx/nginx.conf
-```
-
-**Purpose**: Edit Nginx configuration to enable SSL/TLS server block with the SSL certificates.
-
-**Configuration Changes Required**:
-
-**Find the commented SSL server block and uncomment/modify it:**
+Add the following configuration:
 
 ```nginx
-# HTTPS server configuration
 server {
-    listen       443 ssl http2 default_server;
-    listen       [::]:443 ssl http2 default_server;
-    server_name  172.16.238.11;        # replace this server_name _; to your server ip mine was App Server 3
-    root         /usr/share/nginx/html;
 
-    # SSL Configuration
-    ssl_certificate "/etc/pki/tls/certs/nautilus.crt";
-    ssl_certificate_key "/etc/pki/tls/private/nautilus.key";
-    ssl_session_cache shared:SSL:1m;
-    ssl_session_timeout  10m;
-    ssl_ciphers PROFILE=SYSTEM;
-    ssl_prefer_server_ciphers on;
+    listen 443 ssl;
 
-    # Load configuration files for the default server block.
-    include /etc/nginx/default.d/*.conf;
+    server_name _;
+
+    ssl_certificate /etc/nginx/ssl/nautilus.crt;
+
+    ssl_certificate_key /etc/nginx/ssl/nautilus.key;
+
+
+    root /usr/share/nginx/html;
+
+    index index.html;
+
 
     location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.html;
+
+        try_files $uri $uri/ =404;
+
     }
 
-    error_page   404              /404.html;
-    location = /40x.html {
-    }
-
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-    }
 }
 ```
 
-**Critical Configuration Points**:
-- **Listen on 443**: SSL/HTTPS port
-- **SSL Certificate Path**: `/etc/pki/tls/certs/nautilus.crt`
-- **SSL Key Path**: `/etc/pki/tls/private/nautilus.key`
-- **Document Root**: `/usr/share/nginx/html`
+Save and exit.
+
+### Explanation
+
+Configuration details:
+
+| Directive             | Purpose                           |
+| --------------------- | --------------------------------- |
+| `listen 443 ssl`      | Enables HTTPS on port 443         |
+| `server_name _`       | Accepts requests for any hostname |
+| `ssl_certificate`     | Location of SSL certificate       |
+| `ssl_certificate_key` | Location of private key           |
+| `root`                | Nginx website document root       |
+| `index`               | Default webpage file              |
+| `try_files`           | Handles file requests securely    |
 
 ---
 
-## 🔹 Step 8: Verify Nginx configuration syntax
+# Step 7: Create Website Homepage
+
+Create the HTML file:
 
 ```bash
-nginx -t
+sudo vi /usr/share/nginx/html/index.html
 ```
 
-**Purpose**: Test Nginx configuration syntax before restarting the service.
+Add:
 
-**Expected Output**:
-```
-nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-nginx: configuration file /etc/nginx/nginx.conf test is successful
-```
-
-**If errors found**: Review and fix configuration file syntax before proceeding.
-
----
-
-## 🔹 Step 9: Restart and verify Nginx service
-
-```bash
-systemctl restart nginx
-systemctl status nginx
-```
-
-**Purpose**: Restart Nginx service with the new SSL configuration and verify it's running properly.
-
-**Expected Status**: ✅ **Active (running)** with SSL configuration loaded.
-
-**Check listening ports**:
-```bash
-netstat -tulnp | grep nginx
-```
-
-**Expected Output**:
-```
-tcp        0      0 0.0.0.0:80          0.0.0.0:*         LISTEN      1234/nginx
-tcp        0      0 0.0.0.0:443         0.0.0.0:*         LISTEN      1234/nginx
-```
-
----
-
-## 🔹 Step 10: Create the welcome page
-
-```bash
-cd /usr/share/nginx/html/
-rm -f index.html
-echo "Welcome!" > index.html
-```
-
-**Purpose**: Create the required index.html file under Nginx document root with the specified content.
-
-**Verify file creation**:
-```bash
-cat index.html
-ls -la index.html
-```
-
-**Expected Output**:
-```
+```html
 Welcome!
 ```
 
-**Set proper permissions**:
+Save the file.
+
+### Explanation
+
+* `/usr/share/nginx/html` is the default Nginx document root.
+* `index.html` is displayed when users visit the website.
+
+---
+
+# Step 8: Validate Nginx Configuration
+
+Run:
+
 ```bash
-chmod 644 index.html
-chown nginx:nginx index.html
+sudo nginx -t
+```
+
+Expected result:
+
+```
+syntax is ok
+test is successful
+```
+
+### Explanation
+
+This command checks:
+
+* Configuration syntax
+* SSL file paths
+* Invalid directives
+
+It prevents restarting Nginx with a broken configuration.
+
+---
+
+# Step 9: Restart Nginx
+
+Apply the new configuration:
+
+```bash
+sudo systemctl restart nginx
+```
+
+Verify:
+
+```bash
+sudo systemctl status nginx
 ```
 
 ---
 
-## 🔹 Step 11: Test local SSL connectivity
+# Step 10: Test HTTPS Connection
+
+Return to the jump host:
 
 ```bash
-curl -Ik https://<app-server-ip>/  #replace this with your server ip 
+exit
 ```
 
-**Purpose**: Test SSL connectivity locally on the server to verify basic functionality.
+Run:
 
-**Expected Output**:
+```bash
+curl -Ik https://<app-server-1-hostname>/
+```
+
+Example:
+
+```bash
+curl -Ik https://app-server-1
+```
+
+Expected output:
+
 ```
 HTTP/1.1 200 OK
-Server: nginx/1.20.1
-Date: ...
-Content-Type: text/html
-Content-Length: 8
+Server: nginx
 ```
 
-**Alternative local test**:
-```bash
-curl -k https://127.0.0.1/
+### Explanation
+
+* `curl` sends HTTP requests from the command line.
+* `-I` fetches only HTTP headers.
+* `-k` allows testing with self-signed certificates.
+
+---
+
+# Final Directory Structure
+
+After completion:
+
+```
+/etc/nginx/
+├── conf.d/
+│   └── ssl.conf
+│
+├── ssl/
+│   ├── nautilus.crt
+│   └── nautilus.key
+│
+└── html/
+    └── index.html
 ```
 
 ---
 
-## 🔹 Step 12: Get server IP address
+# Result
 
-```bash
-ip addr show | grep "inet " | grep -v 127.0.0.1
-```
+The App Server 1 is now ready for application deployment with:
 
-**Purpose**: Get the actual IP address of App Server 3 for external testing.
-
-**Expected Output Example**:
-```
-inet 172.16.238.12/24 brd 172.16.238.255 scope global eth0
-```
-
-**Server IP**: `172.16.238.12`
-
----
-
-## 🔹 Step 13: Test from Jump Host
-
-**From Jump Host:**
-
-```bash
-curl -Ik https://172.16.238.12/
-```
-
-**Purpose**: Test HTTPS accessibility from Jump Host to verify external connectivity and SSL configuration.
-
-**Expected Output**:
-```
-HTTP/1.1 200 OK
-Server: nginx/1.20.1
-Date: Wed, 15 Mar 2023 15:30:00 GMT
-Content-Type: text/html
-Content-Length: 8
-Last-Modified: Wed, 15 Mar 2023 15:25:00 GMT
-Connection: keep-alive
-ETag: "64116c5c-8"
-Accept-Ranges: bytes
-```
-
-**Success Indicators**:
-- ✅ **HTTP/1.1 200 OK** status
-- ✅ **Server: nginx** header
-- ✅ **SSL connection established** (no certificate errors with -k flag)
-
----
-
-## 🔹 Step 14: Additional verification tests
-
-```bash
-# Test content retrieval
-curl -k https://172.16.238.12/
-
-# Test SSL certificate details
-openssl s_client -connect 172.16.238.12:443 -servername 172.16.238.12 < /dev/null
-
-# Test different curl options
-curl -Iv https://172.16.238.12/
-```
-
-**Purpose**: Perform comprehensive testing to ensure all requirements are met.
-
----
-
-## 📋 Quick Command Reference
-
-For quick copy-paste, execute on **App Server 3**:
-
-```bash
-# Connect and setup
-ssh banner@stapp03
-sudo su -
-
-# Verify files and install Nginx
-cd /tmp && ls -la
-yum install nginx -y
-systemctl start nginx && systemctl enable nginx
-systemctl status nginx
-
-# Check Nginx status before installation
-systemctl status nginx
-# (Will show "nginx could not be found")
-
-# Install and start Nginx
-cat /etc/os-release
-yum install nginx -y
-systemctl start nginx && systemctl enable nginx
-systemctl status nginx
-
-# Explore SSL directories
-cd /etc/pki
-ls -l
-cd tls  
-ls -l
-cd certs
-ls -l
-
-# Move SSL files (ensure you're in /etc/pki/tls)
-cd /etc/pki/tls
-pwd
-mv /tmp/nautilus.crt certs/
-mv /tmp/nautilus.key private/
-chmod 644 certs/nautilus.crt
-chmod 600 private/nautilus.key
-
-# Configure Nginx
-cd /etc/nginx/
-ls -l
-vi nginx.conf
-# (Configure SSL server block with server IP)
-# (Enable and configure SSL server block)
-
-# Test and restart
-nginx -t
-systemctl restart nginx
-systemctl status nginx
-
-# Create welcome page
-cd /usr/share/nginx/html/
-echo "Welcome!" > index.html
-chmod 644 index.html
-
-# Test locally
-curl -Ik https://localhost/
-```
-
-**Testing from Jump Host:**
-```bash
-curl -Ik https://172.16.238.12/
-```
-
----
-
-## 💡 Additional Tips
-
-- **Certificate validation**: Use `openssl x509 -in /etc/pki/tls/certs/nautilus.crt -text -noout` to view certificate details
-- **SSL cipher testing**: Use `nmap --script ssl-enum-ciphers -p 443 172.16.238.12` to test SSL configuration
-- **Log monitoring**: Check `/var/log/nginx/error.log` for SSL-related errors
-- **Firewall considerations**: Ensure port 443 is open if firewall is active
-- **SELinux context**: Set appropriate SELinux context for SSL files if needed
-
----
-
-## 🔧 Troubleshooting Common Issues
-
-### **Issue 1: SSL certificate permission errors**
-**Symptoms**: Nginx fails to start, SSL certificate errors in logs
-**Solution**: Ensure proper permissions and ownership
-```bash
-chmod 644 /etc/pki/tls/certs/nautilus.crt
-chmod 600 /etc/pki/tls/private/nautilus.key
-chown root:root /etc/pki/tls/certs/nautilus.crt /etc/pki/tls/private/nautilus.key
-```
-
-### **Issue 2: Nginx configuration syntax errors**
-**Symptoms**: `nginx -t` shows syntax errors
-**Solution**: Check for missing brackets, semicolons, and proper indentation
-```bash
-nginx -t
-vi /etc/nginx/nginx.conf
-# Fix syntax errors reported
-```
-
-### **Issue 3: Port 443 not accessible**
-**Symptoms**: curl from jump host fails with connection refused
-**Solution**: Check firewall and service status
-```bash
-systemctl status nginx
-netstat -tulnp | grep :443
-firewall-cmd --list-ports
-firewall-cmd --permanent --add-port=443/tcp
-firewall-cmd --reload
-```
-
-### **Issue 4: SELinux blocking SSL certificate access**
-**Symptoms**: Nginx starts but SSL handshake fails
-**Solution**: Set appropriate SELinux context
-```bash
-restorecon -Rv /etc/pki/tls/
-setsebool -P httpd_can_network_connect 1
-```
-
----
+✅ Nginx installed
+✅ HTTPS enabled
+✅ SSL certificate configured
+✅ Secure key storage
+✅ Default webpage deployed
+✅ HTTPS connectivity verified
 
 ## 🚨 Task-Specific Challenge & Solution
 
