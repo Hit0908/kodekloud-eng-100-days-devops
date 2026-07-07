@@ -65,63 +65,10 @@ iptables -F
 iptables -L -n
 ```
 
----
-
-## 🔹 Step 4: Allow loopback traffic
-
-```bash
-iptables -A INPUT -i lo -j ACCEPT
-```
-
-**Purpose**: Allow all loopback interface traffic (essential for system processes).
-
-**Rule Breakdown**:
-- `-A INPUT` - Append to INPUT chain
-- `-i lo` - Interface loopback
-- `-j ACCEPT` - Jump to ACCEPT target
-
-**Why needed**: 🔄 Many system services communicate via localhost.
-
----
-
-## 🔹 Step 5: Allow established and related connections
-
-```bash
-iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-```
-
-**Purpose**: Allow incoming packets that are part of established connections or related to established connections.
-
-**Rule Breakdown**:
-- `-m state` - Use state matching module
-- `--state ESTABLISHED,RELATED` - Match established and related connections
-- `-j ACCEPT` - Allow these connections
-
-**Why needed**: 🔗 Enables proper bidirectional communication for existing connections.
-
----
-
-## 🔹 Step 6: Allow SSH access (port 22)
-
-```bash
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-```
-
-**Purpose**: Ensure SSH access remains available on port 22 for remote administration.
-
-**Rule Breakdown**:
-- `-p tcp` - Protocol TCP
-- `--dport 22` - Destination port 22
-- `-j ACCEPT` - Allow connection
-
-**Critical**: 🔑 This prevents lockout from the server.
-
----
-
 ## 🔹 Step 7: Allow port 8088 access from LBR host only
 
 ```bash
-iptables -A INPUT -p tcp --dport 8088 -s 172.16.238.14 -j ACCEPT
+iptables -A INPUT -p tcp --dport 8088 -s <$LBRip> -j ACCEPT
 ```
 
 **Purpose**: Allow Apache port 8088 access only from the Load Balancer (LBR) host IP.
@@ -292,16 +239,24 @@ For quick copy-paste, execute on **all app servers** (stapp01, stapp02, stapp03)
 ```bash
 # Switch to root and install iptables
 sudo su -
-yum install -y iptables-services
 
-# Configure firewall rules
-iptables -F
-iptables -A INPUT -i lo -j ACCEPT
-iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8088 -s 172.16.238.14 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8088 -j DROP
-iptables -A INPUT -j REJECT --reject-with icmp-host-prohibited
+# install iptables and the iptables service
+sudo yum install iptables iptables-services -y
+                 or
+sudo dnf install iptables iptables-services -y
+
+# enable and start the iptables service
+sudo systemctl enable iptables
+sudo systemctl start iptables
+
+# Add the needed iptables rules
+sudo iptables -F  #removes all previous rules
+sudo iptables -A INPUT -p tcp --dport 6400 -s 10.244.244.189 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 6400 -j REJECT
+
+# save away the rules so the iptables service will find them on restart
+sudo iptables-save > /etc/sysconfig/iptables
+
 
 # Save and enable rules
 service iptables save
