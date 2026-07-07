@@ -66,7 +66,9 @@ Error: (98)Address already in use: AH00072: make_sock: could not bind to address
 ## 🔹 Step 4: Identify process using the conflicting port
 
 ```bash
+sudo dnf install net-tools -y #Installs all netstat tools
 netstat -luntp | grep 8084
+
 ```
 
 **Purpose**: Show which process is listening on the conflicting port.
