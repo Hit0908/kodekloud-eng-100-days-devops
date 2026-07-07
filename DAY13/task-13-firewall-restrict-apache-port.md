@@ -30,7 +30,7 @@ sudo su -
 ## 🔹 Step 2: Install iptables and dependencies
 
 ```bash
-yum install -y iptables-services
+sudo dnf install -y iptables iptables-services
 ```
 
 **Purpose**: Install iptables service package and all necessary dependencies.
@@ -44,6 +44,10 @@ apt-get install -y iptables iptables-persistent
 **Package Details**: 📦 This provides the iptables service management and persistence functionality.
 
 ---
+Enable and start the iptables service:
+
+  sudo systemctl enable iptables
+  sudo systemctl start iptables
 
 ## 🔹 Step 3: Clear existing iptables rules
 
