@@ -47,7 +47,6 @@ Unit nginx.service could not be found.
 ## 🔹 Step 3: Check OS version and install Nginx
 
 ```bash
-cat /etc/os-release
 yum install nginx -y
 ```
 
@@ -97,6 +96,12 @@ sudo ss -luntp | grep httpd
 tcp    LISTEN  0    128    *:6300    *:*    users:(("httpd",pid=1234,fd=4))
 ```
 
+**On each app server, confirm Apache is running:**
+# On stapp01
+```
+ssh tony@stapp01 "sudo systemctl status httpd"
+
+```
 **Port Identified**: Apache is running on **port 6300**
 
 **Alternative commands**:
@@ -112,6 +117,12 @@ ps aux | grep httpd
 ```bash
 ssh steve@stapp02
 sudo ss -luntp | grep httpd
+
+**On each app server, confirm Apache is running:**
+# On stapp02
+
+ssh tony@stapp02 "sudo systemctl status httpd"
+
 ```
 
 **Purpose**: Connect to App Server 2 and verify Apache port configuration.
@@ -125,6 +136,11 @@ sudo ss -luntp | grep httpd
 ```bash
 ssh banner@stapp03
 sudo ss -luntp | grep httpd
+
+**On each app server, confirm Apache is running:**
+# On stapp03
+ssh tony@stapp03 "sudo systemctl status httpd"
+
 ```
 
 **Purpose**: Connect to App Server 3 and confirm Apache port configuration.
@@ -132,23 +148,6 @@ sudo ss -luntp | grep httpd
 **Expected Result**: Apache should be running on **port 6300** across all app servers.
 
 **Port Summary**: 📊 All app servers should use the same Apache port (e.g., 6300).
-
----
-
-## 🔹 Step 8: Verify Apache service status on all app servers
-
-**On each app server, confirm Apache is running:**
-
-```bash
-# On stapp01
-ssh tony@stapp01 "sudo systemctl status httpd"
-
-# On stapp02  
-ssh steve@stapp02 "sudo systemctl status httpd"
-
-# On stapp03
-ssh banner@stapp03 "sudo systemctl status httpd"
-```
 
 **Purpose**: Ensure Apache service is active on all app servers before configuring load balancer.
 
@@ -160,25 +159,10 @@ ssh banner@stapp03 "sudo systemctl status httpd"
 
 **Back on LBR server (stlb01):**
 
-```bash
-cd /etc/nginx/
-ls -l
-```
-
-**Purpose**: Navigate to Nginx configuration directory and view available files.
-
-**Expected Files**:
-```
--rw-r--r--. 1 root root 2469 Mar 15 10:30 nginx.conf
-drwxr-xr-x. 2 root root 4096 Mar 15 10:30 conf.d
-```
-
----
-
 ## 🔹 Step 10: Configure Nginx load balancing
 
 ```bash
-vi nginx.conf
+sudo vi /etc/nginx/nginx.conf
 ```
 
 **Purpose**: Edit the main Nginx configuration file to add load balancing configuration.
