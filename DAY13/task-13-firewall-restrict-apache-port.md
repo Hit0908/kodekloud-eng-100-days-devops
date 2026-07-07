@@ -44,10 +44,11 @@ apt-get install -y iptables iptables-persistent
 **Package Details**: 📦 This provides the iptables service management and persistence functionality.
 
 ---
-Enable and start the iptables service:
+```Enable and start the iptables service:
 
-  sudo systemctl enable iptables
-  sudo systemctl start iptables
+   sudo systemctl enable iptables
+   sudo systemctl start iptables
+```
 
 ## 🔹 Step 3: Clear existing iptables rules
 
