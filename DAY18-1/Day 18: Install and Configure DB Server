@@ -1,0 +1,215 @@
+# MariaDB Server Setup Guide
+
+![MariaDB](https://img.shields.io/badge/Database-MariaDB-003545?style=for-the-badge\&logo=mariadb\&logoColor=white)
+![Linux](https://img.shields.io/badge/Platform-Linux-FCC624?style=for-the-badge\&logo=linux\&logoColor=black)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+A step-by-step guide to installing and configuring a **MariaDB Server**, creating a database, adding a new user, and granting the required privileges.
+
+---
+
+## 📋 Objective
+
+This guide covers the following tasks:
+
+* Install MariaDB Server
+* Enable and start the MariaDB service
+* Create a new database named `kodekloud_db1`
+* Create a user named `kodekloud_roy`
+* Assign a secure password to the user
+* Grant full privileges on the database
+* Verify the configuration
+
+---
+
+## 🛠 Prerequisites
+
+* A Linux system (Ubuntu/Debian or RHEL/CentOS)
+* Root or sudo privileges
+* Internet connectivity to install packages
+
+---
+
+# 1. Install MariaDB
+
+### Ubuntu/Debian
+
+```bash
+sudo apt update
+sudo apt install -y mariadb-server
+```
+
+### RHEL/CentOS
+
+```bash
+sudo yum install -y mariadb-server
+```
+
+---
+
+# 2. Enable and Start MariaDB
+
+Enable the MariaDB service to start automatically after reboot:
+
+```bash
+sudo systemctl enable mariadb
+```
+
+Start the MariaDB service:
+
+```bash
+sudo systemctl start mariadb
+```
+
+Verify that the service is running:
+
+```bash
+sudo systemctl status mariadb
+```
+
+Expected output:
+
+```
+Active: active (running)
+```
+
+---
+
+# 3. Access the MariaDB Shell
+
+You can log in using either command:
+
+```bash
+sudo mysql
+```
+
+or
+
+```bash
+sudo mariadb
+```
+
+---
+
+# 4. Create a Database
+
+Create a new database named **kodekloud_db1**.
+
+```sql
+CREATE DATABASE kodekloud_db1;
+```
+
+---
+
+# 5. Create a New User
+
+Create a user named **kodekloud_roy** with the password **TmPcZjtRQx**.
+
+```sql
+CREATE USER 'kodekloud_roy'@'localhost'
+IDENTIFIED BY 'TmPcZjtRQx';
+```
+
+---
+
+# 6. Grant Database Privileges
+
+Grant full privileges on the newly created database.
+
+```sql
+GRANT ALL PRIVILEGES
+ON kodekloud_db1.*
+TO 'kodekloud_roy'@'localhost';
+
+FLUSH PRIVILEGES;
+```
+
+---
+
+# 7. Verify the Configuration
+
+### List all databases
+
+```sql
+SHOW DATABASES;
+```
+
+### List all users
+
+```sql
+SELECT User, Host FROM mysql.user;
+```
+
+### Check the user's permissions
+
+```sql
+SHOW GRANTS FOR 'kodekloud_roy'@'localhost';
+```
+
+---
+
+# 8. Exit MariaDB
+
+```sql
+EXIT;
+```
+
+---
+
+# 📁 Configuration Summary
+
+| Item       | Value           |
+| ---------- | --------------- |
+| Database   | `kodekloud_db1` |
+| Username   | `kodekloud_roy` |
+| Password   | `TmPcZjtRQx`    |
+| Host       | `localhost`     |
+| Privileges | ALL PRIVILEGES  |
+
+---
+
+# ✅ Result
+
+After completing this guide:
+
+* ✅ MariaDB Server is installed
+* ✅ MariaDB service is enabled and running
+* ✅ Database `kodekloud_db1` has been created
+* ✅ User `kodekloud_roy` has been created
+* ✅ Password has been configured
+* ✅ Full privileges have been granted on the database
+* ✅ Database setup has been successfully verified
+
+---
+
+## 📚 Useful Commands
+
+Restart MariaDB:
+
+```bash
+sudo systemctl restart mariadb
+```
+
+Stop MariaDB:
+
+```bash
+sudo systemctl stop mariadb
+```
+
+Check service status:
+
+```bash
+sudo systemctl status mariadb
+```
+
+View MariaDB version:
+
+```bash
+mysql --version
+```
+
+---
+
+## 📄 License
+
+This project is intended for educational and learning purposes.
