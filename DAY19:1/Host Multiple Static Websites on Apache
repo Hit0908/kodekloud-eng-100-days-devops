@@ -1,0 +1,259 @@
+# 🚀 Host Multiple Static Websites on Apache
+
+
+
+![Apache](https://img.shields.io/badge/Apache-HTTPD-red?style=for-the-badge\&logo=apache)
+![Linux](https://img.shields.io/badge/Linux-RHEL%20%7C%20CentOS-blue?style=for-the-badge\&logo=linux)
+![Status](https://img.shields.io/badge/Status-Completed-brightgreen?style=for-the-badge)
+
+</p>
+
+---
+
+# 📖 Overview
+
+This project demonstrates how to configure **Apache HTTP Server** to host **multiple static websites** on a single server.
+
+After completing the setup:
+
+* 🌐 `http://localhost:8089/ecommerce/`
+* 🌐 `http://localhost:8089/cluster/`
+
+will both be accessible through Apache running on **port 8089**.
+
+---
+
+# 📌 Project Requirements
+
+* ✅ Install Apache (`httpd`)
+* ✅ Configure Apache to listen on **Port 8089**
+* ✅ Deploy two static websites
+* ✅ Start and enable Apache service
+* ✅ Verify website accessibility using `curl`
+
+---
+
+# 🏗️ Architecture
+
+```text
+                   Client
+                      │
+                      │
+        http://localhost:8089
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+          ▼                       ▼
+   /ecommerce/              /cluster/
+          │                       │
+          ▼                       ▼
+ /var/www/html/ecommerce   /var/www/html/cluster
+```
+
+---
+
+# 📂 Directory Structure
+
+```text
+/var/www/html
+├── ecommerce
+│   ├── index.html
+│   └── assets
+│
+└── cluster
+    ├── index.html
+    └── assets
+```
+
+---
+
+# ⚙️ Step 1 — Install Apache
+
+### RHEL / CentOS
+
+```bash
+sudo yum install -y httpd
+```
+
+Verify installation:
+
+```bash
+httpd -v
+```
+
+---
+
+# ⚙️ Step 2 — Configure Apache Port
+
+Open the Apache configuration file.
+
+```bash
+sudo vi /etc/httpd/conf/httpd.conf
+```
+
+Replace
+
+```apache
+Listen 80
+```
+
+with
+
+```apache
+Listen 8089
+```
+
+---
+
+# 📦 Step 3 — Copy Website Files
+
+The website backups are available on the **Jump Host**.
+
+Copy them to **App Server 1**.
+
+```bash
+scp -r /home/thor/ecommerce tony@app01:/tmp/
+scp -r /home/thor/cluster tony@app01:/tmp/
+```
+
+---
+
+# 📁 Step 4 — Deploy Websites
+
+```bash
+sudo cp -r /tmp/ecommerce /var/www/html/
+sudo cp -r /tmp/cluster /var/www/html/
+```
+
+Verify:
+
+```bash
+ls -l /var/www/html
+```
+
+Expected:
+
+```text
+ecommerce/
+cluster/
+```
+
+---
+
+# 🔐 Step 5 — Set Permissions
+
+```bash
+sudo chown -R apache:apache /var/www/html/ecommerce
+sudo chown -R apache:apache /var/www/html/cluster
+
+sudo chmod -R 755 /var/www/html/ecommerce
+sudo chmod -R 755 /var/www/html/cluster
+```
+
+> **Ubuntu:** Replace `apache` with `www-data`.
+
+---
+
+# ▶️ Step 6 — Start Apache
+
+```bash
+sudo systemctl enable httpd
+sudo systemctl restart httpd
+```
+
+Check status:
+
+```bash
+sudo systemctl status httpd
+```
+
+---
+
+# 🌐 Step 7 — Verify Listening Port
+
+```bash
+sudo ss -tlnp | grep 8089
+```
+
+Expected:
+
+```text
+LISTEN 0 128 *:8089
+```
+
+---
+
+# 🧪 Step 8 — Test the Websites
+
+### Ecommerce
+
+```bash
+curl http://localhost:8089/ecommerce/
+```
+
+### Cluster
+
+```bash
+curl http://localhost:8089/cluster/
+```
+
+---
+
+# 📋 Quick Commands
+
+```bash
+# Install Apache
+sudo yum install -y httpd
+
+# Configure Port
+sudo sed -i 's/^Listen 80/Listen 8089/' /etc/httpd/conf/httpd.conf
+
+# Deploy Websites
+sudo cp -r /tmp/ecommerce /var/www/html/
+sudo cp -r /tmp/cluster /var/www/html/
+
+# Permissions
+sudo chown -R apache:apache /var/www/html/{ecommerce,cluster}
+sudo chmod -R 755 /var/www/html/{ecommerce,cluster}
+
+# Start Apache
+sudo systemctl enable httpd
+sudo systemctl restart httpd
+
+# Verify
+curl http://localhost:8089/ecommerce/
+curl http://localhost:8089/cluster/
+```
+
+---
+
+# ✅ Expected Output
+
+| Component         | Status   |
+| ----------------- | -------- |
+| Apache Installed  | ✅        |
+| Apache Running    | ✅        |
+| Listening Port    | **8089** |
+| Ecommerce Website | ✅        |
+| Cluster Website   | ✅        |
+
+---
+
+# 🎯 Learning Outcomes
+
+* Apache Installation
+* Virtual Directory Hosting
+* Linux File Permissions
+* Service Management with `systemctl`
+* Static Website Deployment
+* Network Port Configuration
+
+---
+
+<div align="center">
+
+## ⭐ If you found this project helpful, consider giving it a Star!
+
+**Happy Learning! 🚀**
+
+</div>
