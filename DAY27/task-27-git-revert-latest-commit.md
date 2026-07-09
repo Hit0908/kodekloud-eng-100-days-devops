@@ -12,6 +12,19 @@ The **Nautilus application development team** requested to revert the latest com
 
 💡 **Note:** You can find the infrastructure details by clicking on the **Details of all Users and Servers** button on the top-right section of the page.
 
+
+Follow only this at first: GIT REVERT
+
+The task is to revert repo HEAD to last commit.. So git revert HEAD with the
+required commit message should resolve this.
+<img width="1035" height="333" alt="image" src="https://github.com/user-attachments/assets/18d5c77e-923c-40d4-8369-fb8c0b24cc4e" />
+
+
+
+
+
+
+
 ---
 
 ## 🔹 Step 1: Connect to Storage Server
