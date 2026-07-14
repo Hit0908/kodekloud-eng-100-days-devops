@@ -236,6 +236,7 @@ grafana-service   NodePort   10.96.123.456   <none>        3000:32000/TCP   30s
 ```bash
 kubectl get nodes -o wide
 ```
+Find the external Ip and use it as Node-ip in curl command. If there is no external IP use INTERNAL IP
 
 **Note the node’s external IP** (e.g., `192.168.1.100`), then:
 ```bash
