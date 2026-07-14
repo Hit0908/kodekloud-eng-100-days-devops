@@ -85,6 +85,7 @@ spec:
   - **Second Container (Sidecar)**:
     - `name: sidecar-container`: Sets the container name.
     - `image: ubuntu:latest`: Uses the `ubuntu:latest` image.
+    - restartPolicy: Always = ` adding this in Yaml file will keep the initContainers in running state rather than termination after eecuting the task` 
     - `command: ["sh", "-c", "while true; do cat /var/log/nginx/access.log /var/log/nginx/error.log; sleep 30; done"]`: Continuously reads Nginx logs every 30 seconds.
     - `volumeMounts`: Mounts `shared-logs` at `/var/log/nginx`.
 - **spec.volumes**: Defines a shared volume:
@@ -94,6 +95,28 @@ spec:
 **Save and Exit**: Press `Esc`, type `:wq`, press `Enter`.
 
 ---
+
+## Important Information about initContainers vs Sidecar containers:
+```
+1. Init Containers
+Init containers are designed for set-up tasks. They must run and exit successfully before any of your main application containers are even allowed to start.
+
+2. Sidecar Containers
+Sidecar containers are designed to enhance or extend the main application container. They run at the same time as your application and share the same network and storage volumes.
+
+But to keep initContainers in running state even after the task execution is to add below in yaml: `restartPolicy: Always`
+```
+```
+How It Behaved Historically vs. How It Behaves Now.
+
+  1.Regular Init Container (restartPolicy: Never or default)Startup:
+    Starts first.Execution: Must run to completion and exit (with exit code 0) before the next container is allowed to
+start.State: Ends in a terminated state.
+
+  2. Native Sidecar Container (restartPolicy: Always on an init container)Startup:
+    Starts first in the defined order of initContainers.Execution: Once the container starts successfully (or its startupProbe succeeds), it does not wait to exit.State: It remains in a running state while Kubernetes immediately proceeds to start the next init container or your main application containers.
+
+```
 
 ## 🔹 Step 4: Verify Pod YAML Syntax
 
@@ -112,6 +135,7 @@ cat webserver.yaml
 - ✅ Volume mounts: `/var/log/nginx` for both containers
 - ✅ Volume: `shared-logs` with `emptyDir: {}`
 - ✅ Correct YAML indentation (2 spaces)
+- ✅ restartPolicy: Always = ` adding this in Yaml file will keep the initContainers in running state rather than termination after eecuting the task` 
 
 ---
 
