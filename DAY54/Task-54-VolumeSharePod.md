@@ -75,6 +75,8 @@ spec:
   volumes:
     - name: volume-share
       emptyDir: {}
+```
+
 
 **Key Configurations**:
 - **apiVersion: v1**: Specifies the Kubernetes API version for pods.
@@ -97,7 +99,6 @@ spec:
 
 **Save and Exit**: Press `Esc`, type `:wq`, press `Enter`.
 
----
 
 ## 🔹 Step 4: Verify Pod YAML Syntax
 
