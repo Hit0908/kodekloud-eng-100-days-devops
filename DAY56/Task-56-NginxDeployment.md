@@ -40,6 +40,19 @@ ssh thor@jump_host
 vi nginx-deployment.yaml
 ```
 
+(OR) Another Way [2nd method]
+
+## Create a deployment like this
+
+```
+kubectl create deployment nginx-deployment \
+  --image=nginx:latest \
+  --replicas=3 \
+  --dry-run=client -o yaml > nginx-deployment.yaml
+```
+  Then Edit the generated manifest to rename the container to nginx-container
+
+
 **Purpose**: Create a YAML file to define the `nginx-deployment` with three replicas and the specified container configuration.
 
 ---
@@ -85,11 +98,25 @@ spec:
 
 ---
 
+
 ## 🔹 Step 4: Create the Service YAML File
 
 ```bash
 vi nginx-service.yaml
 ```
+(OR) Another Way [2nd method]
+
+## Create a Service.yaml like this
+```
+  kubectl expose deployment nginx-deployment \
+  --name=nginx-service \
+  --type=NodePort \
+  --port=80 \
+  --target-port=80 \
+  --dry-run=client -o yaml > nginx-service.yaml`
+
+```
+   Then Edit nginx-service.yaml to set the nodePort to 30011
 
 **Purpose**: Create a YAML file to define the `nginx-service` as a NodePort service to expose the Nginx deployment.
 
