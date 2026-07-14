@@ -5,15 +5,15 @@
 The **Nautilus DevOps team** is developing an application that requires multiple containers within a pod to share a volume for temporary data storage. The team needs to create a pod template to replicate this scenario on the Kubernetes cluster accessible from the jump host. The task involves creating a pod with two containers sharing an `emptyDir` volume, testing the shared volume by creating a file in one container, and verifying its presence in the other.
 
 **👉 Task Requirements**:
-- Create a pod named `volume-share-nautilus`.
+- Create a pod named `volume-share-datacenter`.
 - **First Container**:
-  - Name: `volume-container-nautilus-1`
-  - Image: `ubuntu:latest` (specify the tag explicitly)
+  - Name: `volume-container-datacenter-1`
+  - Image: `fedora:latest` (specify the tag explicitly)
   - Command: Run `sleep 3600` to keep the container running
-  - Mount volume `volume-share` at `/tmp/blog`
+  - Mount volume `volume-share` at `/tmp/media`
 - **Second Container**:
-  - Name: `volume-container-nautilus-2`
-  - Image: `ubuntu:latest` (specify the tag explicitly)
+  - Name: `volume-container-datacenter-2`
+  - Image: `fedora:latest` (specify the tag explicitly)
   - Command: Run `sleep 3600` to keep the container running
   - Mount volume `volume-share` at `/tmp/games`
 - **Volume**:
@@ -40,10 +40,10 @@ ssh thor@jump_host
 ## 🔹 Step 2: Create the Pod YAML File
 
 ```bash
-vi volume-share-nautilus.yaml
+vi volume-share-datacenter.yaml
 ```
 
-**Purpose**: Create a Kubernetes YAML file to define the `volume-share-nautilus` pod with a shared volume.
+**Purpose**: Create a Kubernetes YAML file to define the `volume-share-datacenter` pod with a shared volume.
 
 ---
 
@@ -55,40 +55,41 @@ vi volume-share-nautilus.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: volume-share-nautilus
+  name: volume-share-datacenter
 spec:
   containers:
-    - name: volume-container-nautilus-1
-      image: ubuntu:latest
-      command: ["sleep", "3600"]
+    - name: volume-container-datacenter-1
+      image: fedora:latest
+      command: ["/bin/sh", "-c", "sleep 3600"]
       volumeMounts:
         - name: volume-share
-          mountPath: /tmp/blog
-    - name: volume-container-nautilus-2
-      image: ubuntu:latest
-      command: ["sleep", "3600"]
+          mountPath: /tmp/media
+
+    - name: volume-container-datacenter-2
+      image: fedora:latest
+      command: ["/bin/sh", "-c", "sleep 3600"]
       volumeMounts:
         - name: volume-share
           mountPath: /tmp/games
+
   volumes:
     - name: volume-share
       emptyDir: {}
-```
 
 **Key Configurations**:
 - **apiVersion: v1**: Specifies the Kubernetes API version for pods.
 - **kind: Pod**: Defines the resource type as a pod.
-- **metadata.name: volume-share-nautilus**: Sets the pod name.
+- **metadata.name: volume-share-datacenter**: Sets the pod name.
 - **spec.containers**: Defines two containers:
   - **First Container**:
-    - `name: volume-container-nautilus-1`: Sets the container name.
-    - `image: ubuntu:latest`: Uses the `ubuntu:latest` image.
-    - `command: ["sleep", "3600"]`: Keeps the container running for 1 hour.
-    - `volumeMounts`: Mounts `volume-share` at `/tmp/blog`.
+    - `name: volume-container-datacenetr-1`: Sets the container name.
+    - `image: fedora:latest`: Uses the `fedora:latest` image.
+    - `command: ["/bin/sh", "-c", "sleep 3600"]`: This command is a way to tell a system to pause or "sleep" for a specific         amount of time.Here is exactly how it breaks down:/bin/sh: This launches the standard command-line shell (a command          interpreter) found on Unix-like systems (like Linux or macOS).-c: This flag tells the shell to execute the specific          string of text that follows it as a command, rather than opening an interactive session."sleep 3600": This is the            command being executed. sleep pauses execution for the number of seconds specified. Because $3600\text{ seconds} =           60\text{ minutes}$, it tells the system to do nothing for exactly 1 hour.
+    - `volumeMounts`: Mounts `volume-share` at `/tmp/media`.
+
   - **Second Container**:
-    - `name: volume-container-nautilus-2`: Sets the container name.
-    - `image: ubuntu:latest`: Uses the `ubuntu:latest` image.
-    - `command: ["sleep", "3600"]`: Keeps the container running for 1 hour.
+    - `name: volume-container-datacenter-2`: Sets the container name.
+    - `image: fedora:latest`: Uses the `fedora:latest` image.
     - `volumeMounts`: Mounts `volume-share` at `/tmp/games`.
 - **spec.volumes**: Defines a shared volume:
   - `name: volume-share`: Names the volume.
@@ -101,18 +102,18 @@ spec:
 ## 🔹 Step 4: Verify Pod YAML Syntax
 
 ```bash
-cat volume-share-nautilus.yaml
+cat volume-share-datacenter.yaml
 ```
 
 **Purpose**: Confirm the YAML file contains the correct configuration.
 
 **Validation Checklist**:
 - ✅ `apiVersion: v1` and `kind: Pod`
-- ✅ Pod name: `volume-share-nautilus`
-- ✅ Container names: `volume-container-nautilus-1` and `volume-container-nautilus-2`
-- ✅ Image: `ubuntu:latest` for both containers
-- ✅ Command: `["sleep", "3600"]` for both containers
-- ✅ Volume mounts: `/tmp/blog` and `/tmp/games` for `volume-share`
+- ✅ Pod name: `volume-share-datacenter`
+- ✅ Container names: `volume-container-datacenter-1` and `volume-container-datacenter-2`
+- ✅ Image: `fedora:latest` for both containers
+- ✅ Command: `["/bin/sh", "-c", "sleep 3600"]` for both containers
+- ✅ Volume mounts: `/tmp/media` and `/tmp/games` for `volume-share`
 - ✅ Volume: `volume-share` with `emptyDir: {}`
 - ✅ Correct YAML indentation (2 spaces)
 
@@ -121,14 +122,14 @@ cat volume-share-nautilus.yaml
 ## 🔹 Step 5: Apply the Pod Configuration
 
 ```bash
-kubectl apply -f volume-share-nautilus.yaml
+kubectl apply -f volume-share-datacenter.yaml
 ```
 
 **Purpose**: Deploy the pod to the Kubernetes cluster.
 
 **Expected Output**:
 ```
-pod/volume-share-nautilus created
+pod/volume-share-datacenetr created
 ```
 
 ---
@@ -139,16 +140,16 @@ pod/volume-share-nautilus created
 kubectl get pods
 ```
 
-**Purpose**: Confirm the `volume-share-nautilus` pod is running with both containers.
+**Purpose**: Confirm the `volume-share-datacenter` pod is running with both containers.
 
 **Expected Output**:
 ```
 NAME                    READY   STATUS    RESTARTS   AGE
-volume-share-nautilus   2/2     Running   0          30s
+volume-share-datacenter   2/2     Running   0          30s
 ```
 
 **Success Indicators**:
-- ✅ Pod name: `volume-share-nautilus`
+- ✅ Pod name: `volume-share-datacenter`
 - ✅ Status: `Running`
 - ✅ Ready: `2/2` (both containers)
 - ✅ No restarts
@@ -158,26 +159,26 @@ volume-share-nautilus   2/2     Running   0          30s
 ## 🔹 Step 7: Verify Pod Details
 
 ```bash
-kubectl describe pod volume-share-nautilus
+kubectl describe pod volume-share-datacenter
 ```
 
 **Purpose**: Check detailed information about the pod, including volume mounts and container status.
 
 **Expected Output (Excerpt)**:
 ```
-Name:         volume-share-nautilus
+Name:         volume-share-datacenter
 Namespace:    default
 Containers:
-  volume-container-nautilus-1:
-    Image:        ubuntu:latest
+  volume-container-datacenter-1:
+    Image:        fedora:latest
     Command:
       sleep
       3600
     Volume Mounts:
-      /tmp/blog from volume-share (rw)
+      /tmp/media from volume-share (rw)
     State:        Running
-  volume-container-nautilus-2:
-    Image:        ubuntu:latest
+  volume-container-datacenter-2:
+    Image:        fedora:latest
     Command:
       sleep
       3600
@@ -191,7 +192,7 @@ Volumes:
 
 **Success Indicators**:
 - ✅ Correct container names and images
-- ✅ Volume mounts at `/tmp/blog` and `/tmp/games`
+- ✅ Volume mounts at `/tmp/media` and `/tmp/games`
 - ✅ `volume-share` as `EmptyDir`
 - ✅ Both containers in `Running` state
 
@@ -200,116 +201,57 @@ Volumes:
 ## 🔹 Step 8: Exec into First Container and Create File
 
 ```bash
-kubectl exec -it volume-share-nautilus -c volume-container-nautilus-1 -- bash
+kubectl exec -it volume-share-datacenter -c volume-container-datacenter-1 -- bash
+
+can use -- bash (or) -- /bin/sh
+
 ```
 
 **Inside the container**:
 ```bash
-cd /tmp/blog
-echo "Hello from container 1" > blog.txt
+echo "Welcome to xFusionCorp Industries" > /tmp/media/media.txt
 exit
 ```
 
-**Purpose**: Create a `blog.txt` file in the shared volume at `/tmp/blog` in the first container.
+**Purpose**: Create a `media.txt` file in the shared volume at `/tmp/blog` in the first container.
 
 ---
 
 ## 🔹 Step 9: Verify File in Second Container
 
 ```bash
-kubectl exec -it volume-share-nautilus -c volume-container-nautilus-2 -- bash
+kubectl exec -it volume-share-datacenter -c volume-container-datacenter-2 
 ```
 
 **Inside the container**:
 ```bash
-cat /tmp/games/blog.txt
+cat /tmp/games/media.txt
 ```
 
 **Expected Output**:
 ```
-Hello from container 1
+Welcome to xFusionCorp Industries
 ```
 
-**Purpose**: Confirm the `blog.txt` file is accessible in the second container at `/tmp/games`, verifying the shared volume.
+**Purpose**: Confirm the `media.txt` file is accessible in the second container at `/tmp/games`, verifying the shared volume.
 
 **Exit the container**:
 ```bash
 exit
 ```
 
----
-
-## 🔹 Step 10: Check Container Logs (Optional)
-
-```bash
-kubectl logs volume-share-nautilus -c volume-container-nautilus-1
-kubectl logs volume-share-nautilus -c volume-container-nautilus-2
-```
-
-**Purpose**: Verify both containers are running without errors.
-
-**Expected Output**: Likely empty, as `sleep 3600` produces no logs unless interrupted.
-
----
-
 ## 🔹 Step 11: Clean Up (Optional)
 
 ```bash
-kubectl delete -f volume-share-nautilus.yaml
+kubectl delete -f volume-share-datacenter.yaml
 ```
 
 **Purpose**: Remove the pod if testing is complete.
 
 **Expected Output**:
 ```
-pod "volume-share-nautilus" deleted
+pod "volume-share-datacenter" deleted
 ```
-
----
-
-## 📋 Quick Command Reference
-
-For quick copy-paste, execute on **Jump Host**:
-
-```bash
-# Connect to jump host
-ssh thor@jump_host
-
-# Create pod YAML
-cat > volume-share-nautilus.yaml << 'EOF'
-apiVersion: v1
-kind: Pod
-metadata:
-  name: volume-share-nautilus
-spec:
-  containers:
-    - name: volume-container-nautilus-1
-      image: ubuntu:latest
-      command: ["sleep", "3600"]
-      volumeMounts:
-        - name: volume-share
-          mountPath: /tmp/blog
-    - name: volume-container-nautilus-2
-      image: ubuntu:latest
-      command: ["sleep", "3600"]
-      volumeMounts:
-        - name: volume-share
-          mountPath: /tmp/games
-  volumes:
-    - name: volume-share
-      emptyDir: {}
-EOF
-
-# Deploy and verify
-kubectl apply -f volume-share-nautilus.yaml
-kubectl get pods
-kubectl describe pod volume-share-nautilus
-
-# Create and verify file in shared volume
-kubectl exec -it volume-share-nautilus -c volume-container-nautilus-1 -- bash -c 'cd /tmp/blog && echo "Hello from container 1" > blog.txt'
-kubectl exec -it volume-share-nautilus -c volume-container-nautilus-2 -- cat /tmp/games/blog.txt
-```
-
 ---
 
 ## 💡 Common Kubernetes Pod Issues & Fixes
