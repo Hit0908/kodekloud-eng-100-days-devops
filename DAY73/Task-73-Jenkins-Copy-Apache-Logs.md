@@ -1,7 +1,7 @@
-# 🌟 Task 73 - Copy Apache Logs from App Server 2 to Storage Server
+# 🌟 Task 73 - Copy Apache Logs from App Server 3 to Storage Server
 
 **📌 Task Description**  
-The **xFusionCorp Industries DevOps team** is setting up a **centralized logging system**. To troubleshoot Apache issues on **App Server 2**, they need access and error logs copied regularly. A Jenkins job must run **every 10 minutes** to securely transfer logs from `stapp02` to `ststor01`.
+Click on the Jenkins button on the top bar to access the Jenkins UI. Login using username admin and password Adm!n321 1. Create a Jenkins jobs named copy-logs. 2. Configure it to periodically build every 9 minutes to copy the Apache logs (both access_log and error_log) from App Server 3 (stapp03) from the default logs location to location /usr/src/security on the Storage Server. 3. Build the job at least once so that the logs are copied and can be verified.
 
 **👉 Task Requirements**:  
 - Access Jenkins UI and log in with **username**: `admin`, **password**: `Adm!n321`.  
@@ -10,11 +10,9 @@ The **xFusionCorp Industries DevOps team** is setting up a **centralized logging
 - Copy both Apache logs:  
   - `/var/log/httpd/access_log`  
   - `/var/log/httpd/error_log`  
-- **Destination**: `/usr/src/sysops` on Storage Server (`ststor01`).  
-- Use SSH + SCP via `steve@stapp02` and `natasha@ststor01`.  
+- **Destination**: `/usr/src/security` on Storage Server (`ststor01`).  
+- Use SSH + SCP via `banner@stapp03` and `natasha@ststor01`.  
 - Verify logs are copied successfully.
-
-**💡 Note**: Use SSH plugins, credentials, and remote hosts. Password: `Bl@kW`. No interactive prompts.
 
 ---
 
@@ -36,190 +34,75 @@ The **xFusionCorp Industries DevOps team** is setting up a **centralized logging
 
 ---
 
-## 🔹 Step 2: Install Required SSH Plugins
+## 🔹 Step 2: 
 
-**Action**: Install plugins for remote SSH execution and file transfer.  
-**Purpose**: Enable secure communication with `stapp02` and `ststor01`.
+Ensure Jenkins can SSH to the source server (stapp03) if the job runs commands there.
+Ensure the source server (stapp03) can SSH to the Storage Server if you're using scp/rsync from stapp03 to the storage server.
 
-**Steps**:  
-1. Go to **Manage Jenkins** → **Plugins** → **Available plugins**.  
-2. Search and install:  
-   - **SSH Plugin**  
-   - **SSH Credentials Plugin**  
-   - **Publish Over SSH Plugin**  
-3. Check **Restart Jenkins when installation is complete and no jobs are running**.  
-4. Re-login after restart.
+Generate an SSH key (if needed):
 
-**Success Indicators**:  
-- ✅ All 3 plugins installed.  
-- ✅ Jenkins restarts successfully.
+                ssh-keygen -t rsa -N ""
 
----
+Copy the public key:
 
-## 🔹 Step 3: Add SSH Credentials for steve@stapp02 and natasha@ststor01
+                ssh-copy-id banner@stapp03
 
-**Action**: Store SSH credentials securely in Jenkins.  
-**Purpose**: Avoid hardcoding passwords in job commands.
+Verify: Then SSH into stapp03 and configure passwordless SSH to the Storage Server:
 
-**Steps**:  
-1. Go to **Manage Jenkins** → **Credentials** → **System** → **Global credentials**.  
-2. Click **Add Credentials** → **Username with password**.  
-3. **For App Server 2**:  
-   - **Username**: `steve`  
-   - **Password**: `Bl@kW`  
-   - **ID**: `stapp02-cred`  
-   - **Description**: `App Server 2 SSH Access`  
-4. **Repeat for Storage Server**:  
-   - **Username**: `natasha`  
-   - **Password**: `Bl@kW`  
-   - **ID**: `ststor01-cred`  
-   - **Description**: `Storage Server SSH Access`  
-5. Click **OK**.
+          ssh-keygen -t rsa -N ""
+          ssh-copy-id natasha@ststor01
 
-**Success Indicators**:  
-- ✅ Credentials saved with correct IDs.  
-- ✅ No errors.
+verify: SSH into app server 3
+           
+           ssh banner@stapp03
+           
+and from stapp03: SSH into storage server
 
----
+            ssh natasha@ststor01
 
-## 🔹 Step 4: Configure SSH Remote Hosts
+Both should log in without prompting for a password.
+               
 
-**Action**: Register `stapp02` and `ststor01` as trusted SSH hosts.  
-**Purpose**: Allow Jenkins to execute commands and transfer files.
+If you're using the Jenkins Publish over SSH plugin instead, then only the Jenkins server needs SSH access to the destination server.
 
-**Steps**:  
-1. Go to **Manage Jenkins** → **System** → **SSH remote hosts**.  
-2. **Add stapp02**:  
-   - **Hostname**: `stapp02`  
-   - **Port**: `22`  
-   - **Username**: `steve`  
-   - **Credentials**: `stapp02-cred`  
-   - Click **Check Connection** → **Success**  
-3. **Add ststor01**:  
-   - **Hostname**: `ststor01`  
-   - **Port**: `22`  
-   - **Username**: `natasha`  
-   - **Credentials**: `ststor01-cred`  
-   - Click **Check Connection** → **Success**  
-4. Click **Save**.
+For the Jenkins job itself:
+    
+    New Item
+    Job name: copy-logs
+    Type: Freestyle project
+    Build trigger: Build periodically
 
-**Success Indicators**:  
-- ✅ Both hosts show **Success** in connection test.
+Schedule: A cronjob to move logs every 9 mins
 
----
+                  */9 * * * *
 
-## 🔹 Step 5: Create Jenkins Job `copy-logs`
+Build step (Execute shell):
 
-**Action**: Create a new Freestyle project.  
-**Purpose**: Foundation for scheduled log collection.
+        ssh banner@stapp03 <<'EOF'
+        scp /var/log/httpd/access_log /var/log/httpd/error_log natasha@ststor01:/usr/src/security/
+        EOF
+If Apache logs are under /var/log/apache2/ in your environment, replace the path accordingly. For xFusion labs, /var/log/httpd/ is the usual location.
 
-**Steps**:  
-1. From dashboard, click **New Item**.  
-2. Enter:  
-   - **Item name**: `copy-logs`  
-   - **Type**: **Freestyle project**  
-3. Click **OK**.
+or, if the job runs directly on stapp03:
 
-**Success Indicators**:  
-- ✅ Job configuration page opens.
+cp /var/log/httpd/access_log /usr/src/security/
+cp /var/log/httpd/error_log /usr/src/security/
 
----
+(Use the first or second approach depending on your lab topology.)
 
-## 🔹 Step 6: Schedule Build Every 10 Minutes
+Finally:
 
-**Action**: Configure cron trigger.  
-**Purpose**: Automate log collection.
+     Save the job.
+     Click Build Now.
 
-**Steps**:  
-1. Check **Build periodically**.  
-2. Enter cron schedule:  
-```
-   H/10 * * * *
-```  
-   *(Runs every 10 minutes)*
+Verify on the Storage Server:
 
-**Success Indicators**:  
-- ✅ Schedule saved correctly.
+    ls -l /usr/src/security
 
----
+You should see:
 
-## 🔹 Step 7: Add SSH Build Step to Copy Logs
-
-**Action**: Execute SCP command from `stapp02` to `ststor01`.  
-**Purpose**: Transfer both Apache logs securely.
-
-**Steps**:  
-1. Under **Build**, click **Add build step** → **Execute shell script on remote host using SSH**.  
-2. Select:  
-   - **SSH Server**: `stapp02`  
-3. Enter command:  
-```bash
-   sshpass -p "Bl@kW" scp -p -o StrictHostKeyChecking=no /var/log/httpd/* natasha@ststor01:/usr/src/sysops
-```  
-4. Click **Save**.
-
-**Success Indicators**:  
-- ✅ Command saved.  
-- ✅ No syntax errors.
-
----
-
-## 🔹 Step 8: Trigger Build Manually
-
-**Action**: Run job to test immediately.  
-**Purpose**: Validate end-to-end functionality.
-
-**Steps**:  
-1. Go to `copy-logs` job.  
-2. Click **Build Now**.  
-3. Monitor **Console Output** for:  
-```
-   access_log  100%   XXMB
-   error_log   100%   XXKB
-```
-
-**Success Indicators**:  
-- ✅ Build succeeds.  
-- ✅ Files transferred.
-
----
-
-## 🔹 Step 9: Verify Logs on ststor01
-
-**Action**: SSH into storage server and check files.  
-**Purpose**: Confirm logs are copied correctly.
-
-**Steps**:  
-```bash
-ssh natasha@ststor01
-```
-```bash
-cd /usr/src/sysops/
-ls -l
-```
-
-**Expected Output**:  
-```
--rw-r--r-- 1 natasha natasha  ... access_log
--rw-r--r-- 1 natasha natasha  ... error_log
-```
-```bash
-cat error_log | head
-```
-
-**Expected Output**:  
-```
-[Sat Nov 01 13:28:25.398041 2025] [suexec:notice] ...
-AH00558: httpd: Could not reliably determine...
-```
-```bash
-exit
-```
-
-**Success Indicators**:  
-- ✅ Both files exist.  
-- ✅ Content is readable.
-
+    access_log
+    error_log
 ---
 
 ## 🔹 Step 10: Document the Process
