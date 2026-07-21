@@ -13,11 +13,42 @@ The **Nautilus DevOps team** needs to automate daily backups of the `kodekloud_d
 - Copy dump to: `/home/clint/db_backups` on `stbkp01`  
 - **Schedule**: `*/10 * * * *` (exact format)  
 - Use SSH + SCP securely.
+For this KodeKloud Jenkins task, you need a Jenkins freestyle job that:
 
-**💡 Note**: Use Publish Over SSH plugin. Ensure `sshpass` is installed. Clean up temp files.
+Runs a MySQL dump on App Server 1 (stapp01)
+Names the dump db_YYYY-MM-DD.sql
+Copies it to Storage Server (ststor01)
+Runs every 10 minutes using the exact cron schedule
+
+Assuming the common xFusion users:
+
+App Server 1: tony@stapp01
+Storage Server: natasha@ststor01
 
 ---
+1. Configure SSH access
 
+The Jenkins server needs to SSH to stapp01:
+
+From Jenkins: run below command
+       
+       ssh tony@stapp01 hostname
+If the output is shown without password being asked then continue.
+If the password is asked then configure ssh keys on Jenkins sevrer, Then copy the ssh key to app sever 1:
+
+      ssh-keygen -t rsa -N ""
+      ssh-copy-id tony@stapp01
+
+Similarly from stapp01 run below command
+
+      ssh natasha@ststor01 hostname 
+      
+If output is shown without password being asked continue else configure ssh keys and copy to storage server
+  on stapp01:
+
+            ssh-keygen -t rsa -N ""
+            ssh-copy-id natasha@ststor01
+      
 ## 🔹 Step 1: Access Jenkins UI
 
 **Action**: Open Jenkins UI and log in with admin credentials.  
@@ -33,55 +64,6 @@ The **Nautilus DevOps team** needs to automate daily backups of the `kodekloud_d
 **Success Indicators**:  
 - ✅ Login page loads successfully.  
 - ✅ Dashboard appears after login.
-
----
-
-## 🔹 Step 2: Install Required SSH Plugins
-
-**Action**: Install plugins for remote execution and file transfer.  
-**Purpose**: Enable secure SSH access to `stdb01` and `stbkp01`.
-
-**Steps**:  
-1. Go to **Manage Jenkins** → **Plugins** → **Available plugins**.  
-2. Search and install:  
-   - **SSH Credentials Plugin**  
-   - **Publish Over SSH Plugin**  
-3. Check **Restart Jenkins when installation is complete and no jobs are running**.  
-4. Re-login after restart.
-
-**Success Indicators**:  
-- ✅ Both plugins installed.  
-- ✅ Jenkins restarts successfully.
-
----
-
-## 🔹 Step 3: Configure SSH Servers in Publish Over SSH
-
-**Action**: Add `stdb01` and `stbkp01` as trusted SSH servers.  
-**Purpose**: Allow Jenkins to execute commands and transfer files.
-
-**Steps**:  
-1. Go to **Manage Jenkins** → **System** → **Publish Over SSH**.  
-2. Under **SSH Servers**, click **Add** → **Add Database Server**:  
-   - **Name**: `stdb01`  
-   - **Hostname**: `stdb01.stratos.xfusioncorp.com`  
-   - **Username**: `peter`  
-   - Click **Advanced** → Check **Use password authentication**  
-   - **Password**: `Sp!dy`  
-   - **Port**: `22`  
-   - Click **Test Configuration** → Should show **Success**  
-3. Click **Add** again → **Add Backup Server**:  
-   - **Name**: `stbkp01`  
-   - **Hostname**: `stbkp01.stratos.xfusioncorp.com`  
-   - **Username**: `clint`  
-   - Click **Advanced** → **Password**: `H@wk3y3`  
-   - **Port**: `22`  
-   - Click **Test Configuration** → **Success**  
-4. Click **Apply** → **Save**.
-
-**Success Indicators**:  
-- ✅ Both servers show **Success** in test.  
-- ✅ Configuration saved.
 
 ---
 
@@ -126,17 +108,13 @@ The **Nautilus DevOps team** needs to automate daily backups of the `kodekloud_d
 **Purpose**: Create dump and copy to backup server.
 
 **Steps**:  
-1. Under **Build**, click **Add build step** → **Send files or execute commands over SSH**.  
-2. Select:  
-   - **SSH Server**: `stdb01`  
-3. In **Exec command**, enter:  
+1. Under **Build**, click **Add build step** → **Execute Shell Build Step**.  
+2. In **Exec command**, enter:  
 ```bash
-   mkdir -p /tmp/db-backup
-   mysqldump -u kodekloud_roy -p'asdfgdsd' kodekloud_db01 > /tmp/db-backup/db_$(date +%F).sql
-   ls -la /tmp/db-backup/
-   sudo apt install sshpass -y
-   sshpass -p 'H@wk3y3' scp -o StrictHostKeyChecking=no /tmp/db-backup/*.sql clint@stbkp01:/home/clint/db_backups
-   rm -rf /tmp/db-backup
+  ssh tony@stapp01 <<'EOF'
+  mysqldump -ukodekloud_roy -pasdfgdsd kodekloud_db01 > /tmp/db_$(date +%F).sql
+  scp /tmp/db_$(date +%F).sql natasha@ststor01:/home/natasha/db_backups/
+  EOF
 ```  
 4. Click **Save**.
 
@@ -169,21 +147,20 @@ The **Nautilus DevOps team** needs to automate daily backups of the `kodekloud_d
 
 ## 🔹 Step 8: Verify Backup on stbkp01
 
-**Action**: SSH into backup server and check file.  
+**Action**: SSH into storage server and check file.  
 **Purpose**: Confirm dump was copied correctly.
 
 **Steps**:  
 ```bash
-ssh clint@stbkp01
+ssh natasha@ststor01
 ```
 ```bash
-cd /home/clint/db_backups/
-ls -la
+ls -l /home/natasha/db_backups
 ```
 
 **Expected Output**:  
 ```
--rw-r--r-- 1 clint clint 44958 Nov 15 12:16 db_2025-11-15.sql
+-rw-r--r-- 1 clint clint 44958 Jul 22 12:16 db_2026-07-22.sql
 ```
 ```bash
 head -20 db_2025-11-15.sql
