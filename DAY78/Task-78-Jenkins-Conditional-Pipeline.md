@@ -156,18 +156,32 @@ exit
 5. Paste script:  
 ```groovy
 pipeline {
-    agent { label 'ststor01' }
+    agent {
+        label 'stapp01'
+    }
+
+    parameters {
+        string(
+            name: 'BRANCH',
+            defaultValue: 'master',
+            description: 'master or feature'
+        )
+    }
+
     stages {
         stage('Deploy') {
             steps {
                 script {
-                    sh """
-                        rm -rf /tmp/web_app
-                        git clone -b ${BRANCH} http://git.stratos.xfusioncorp.com/sarah/web_app.git /tmp/web_app
-                        ls -la /tmp/web_app
-                        echo 'Bl@kW' | sudo -S cp -r /tmp/web_app/* /var/www/html/
-                        rm -rf /tmp/web_app
-                    """
+                    if (params.BRANCH == 'master' || params.BRANCH == 'feature') {
+                        sh """
+                        cd /var/www/html
+                        git fetch --all
+                        git checkout ${params.BRANCH}
+                        git reset --hard origin/${params.BRANCH}
+                        """
+                    } else {
+                        error("Invalid branch: ${params.BRANCH}")
+                    }
                 }
             }
         }
@@ -268,17 +282,32 @@ pipeline {
 **Pipeline Script**:  
 ```groovy
 pipeline {
-    agent { label 'ststor01' }
+    agent {
+        label 'stapp01'
+    }
+
+    parameters {
+        string(
+            name: 'BRANCH',
+            defaultValue: 'master',
+            description: 'master or feature'
+        )
+    }
+
     stages {
         stage('Deploy') {
             steps {
                 script {
-                    sh """
-                        rm -rf /tmp/web_app
-                        git clone -b ${BRANCH} http://git.stratos.xfusioncorp.com/sarah/web_app.git /tmp/web_app
-                        echo 'Bl@kW' | sudo -S cp -r /tmp/web_app/* /var/www/html/
-                        rm -rf /tmp/web_app
-                    """
+                    if (params.BRANCH == 'master' || params.BRANCH == 'feature') {
+                        sh """
+                        cd /var/www/html
+                        git fetch --all
+                        git checkout ${params.BRANCH}
+                        git reset --hard origin/${params.BRANCH}
+                        """
+                    } else {
+                        error("Invalid branch: ${params.BRANCH}")
+                    }
                 }
             }
         }
