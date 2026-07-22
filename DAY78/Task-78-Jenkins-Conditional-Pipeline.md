@@ -156,33 +156,20 @@ exit
 5. Paste script:  
 ```groovy
 pipeline {
-    agent {
-        label 'stapp01'
-    }
+    agent { label 'stapp01' }
 
     parameters {
-        string(
-            name: 'BRANCH',
-            defaultValue: 'master',
-            description: 'master or feature'
-        )
+        string(name: 'BRANCH', defaultValue: 'master')
     }
 
     stages {
         stage('Deploy') {
             steps {
-                script {
-                    if (params.BRANCH == 'master' || params.BRANCH == 'feature') {
-                        sh """
-                        cd /var/www/html
-                        git fetch --all
-                        git checkout ${params.BRANCH}
-                        git reset --hard origin/${params.BRANCH}
-                        """
-                    } else {
-                        error("Invalid branch: ${params.BRANCH}")
-                    }
-                }
+                sh '''
+                    echo 'Bl@kW' | sudo -S git -C /var/www/html fetch origin
+                    echo 'Bl@kW' | sudo -S git -C /var/www/html checkout $BRANCH
+                    echo 'Bl@kW' | sudo -S git -C /var/www/html reset --hard origin/$BRANCH
+                '''
             }
         }
     }
@@ -282,33 +269,33 @@ pipeline {
 **Pipeline Script**:  
 ```groovy
 pipeline {
-    agent {
-        label 'stapp01'
-    }
+    agent { label 'stapp01' }
 
     parameters {
-        string(
-            name: 'BRANCH',
-            defaultValue: 'master',
-            description: 'master or feature'
-        )
+        string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to deploy')
     }
 
     stages {
         stage('Deploy') {
             steps {
-                script {
-                    if (params.BRANCH == 'master' || params.BRANCH == 'feature') {
-                        sh """
-                        cd /var/www/html
-                        git fetch --all
-                        git checkout ${params.BRANCH}
-                        git reset --hard origin/${params.BRANCH}
-                        """
-                    } else {
-                        error("Invalid branch: ${params.BRANCH}")
-                    }
-                }
+                sh '''
+                    cd /var/www/html
+
+                    # Force clean local changes and untracked files
+                    git reset --hard
+                    git clean -fd
+
+                    # Fetch updates and switch to target branch
+                    git fetch origin
+                    git checkout ${BRANCH}
+                    git reset --hard origin/${BRANCH}
+
+                    # Maintain proper ownership for tony and web server
+                    sudo chown -R tony:tony /var/www/html
+                    sudo chmod -R 755 /var/www/html
+
+                    ls -la /var/www/html
+                '''
             }
         }
     }
