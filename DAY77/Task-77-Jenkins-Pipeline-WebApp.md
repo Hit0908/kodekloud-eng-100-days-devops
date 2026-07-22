@@ -155,7 +155,7 @@ exit
            stage('Deploy') {
                steps {
                    sh '''
-                       cd /var/www/html/web_app
+                       cd /var/www/html
                        git pull origin master
                    '''
                }
