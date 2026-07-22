@@ -75,8 +75,10 @@ sudo yum install java-21-openjdk -y
 java -version
 ```
 ```bash
-# Fix ownership
-sudo chown -R natasha:natasha /var/www/html
+# Fix ownership - Add these steps in all day 75,76,77 etc
+sudo chown -R natasha:natasha /var/www/html     #Grant Ownership of the Agent Directory to natasha
+sudo chmod -R 755 /var/www/html    #Ensure Permissions Allow Writing
+sudo chmod 755 /var/www         #Allow Directory Traversal
 ls -ld /var/www/html
 ```
 ```bash
