@@ -1,29 +1,36 @@
 # 🌟 Task 78 - Conditional Jenkins Pipeline with Branch Parameter
 
 **📌 Task Description**  
-The **xFusionCorp Industries** team is enhancing their static website deployment using **Jenkins Pipeline**. Now, they need **conditional deployment** based on a `BRANCH` parameter (`master` or `feature`) from the **Gitea** `web_app` repo on **Storage Server**.
 
-The pipeline must clone and deploy only the selected branch to `/var/www/html`, which is mounted to all **App Servers** via **Load Balancer (LB)**.
+The development team of xFusionCorp Industries is working on to develop a new static website and they are planning to deploy the same on Nautilus App Server using Jenkins pipeline. They have shared their requirements with the DevOps team and accordingly we need to create a Jenkins pipeline job. Please find below more details about the task:
 
-**👉 Task Requirements**:  
-- Access Jenkins UI and log in with **username**: `admin`, **password**: `Adm!n321`.  
-- Access Gitea UI and log in with **username**: `sarah`, **password**: `Sarah_pass123`.  
-- Add **Storage Server** as SSH slave node:  
-  - **Name**: `Storage Server`  
-  - **Label**: `ststor01`  
-  - **Remote Root**: `/var/www/html`  
-- Create **Pipeline job** (not Multibranch): `nautilus-webapp-job`  
-- **String Parameter**: `BRANCH` (default: `master`)  
-- Single stage: `Deploy` (case-sensitive)  
-- **Conditional logic**:  
-  - If `BRANCH = master` → deploy master  
-  - If `BRANCH = feature` → deploy feature  
-- Clone from Gitea: `http://git.stratos.xfusioncorp.com/sarah/web_app.git`  
-- Deploy to: `/var/www/html` (overwrite)  
-- **Final URL**: `https://<LBR-URL>` → No subfolder  
-- App shows: **"Welcome to xFusionCorp Industries!"**
 
----
+
+Click on the Jenkins button on the top bar to access the Jenkins UI. Login using username admin and password Adm!n321.
+
+
+Similarly, click on the Gitea button on the top bar to access the Gitea UI. Login using username sarah and password Sarah_pass123. There under user sarah you will find a repository named web_app that is already cloned on App Server 1 under /var/www/html. sarah is a developer who is working on this repository.
+
+
+Add a slave node named App Server 1. It should be labeled as stapp01 and its remote root directory should be /home/sarah/jenkins_agent (the repository is cloned under /var/www/html).
+
+
+We have already cloned repository on App Server 1 under /var/www/html.
+
+
+Apache is already installed on the app server and is running on port 8080.
+
+
+Create a Jenkins pipeline job named nautilus-webapp-job (it must not be a Multibranch pipeline) and configure it to:
+
+
+Add a string parameter named BRANCH.
+
+It should conditionally deploy the code from web_app repository under /var/www/html on App Server 1, as this is the document root of the app server. The pipeline should have a single stage named Deploy ( which is case sensitive ) to accomplish the deployment.
+
+The pipeline should be conditional, if the value master is passed to the BRANCH parameter then it must deploy the master branch, on the other hand if the value feature is passed to the BRANCH parameter then it must deploy the feature branch.
+
+LB server is already configured. You should be able to see the latest changes you made by clicking on the App button. Please make sure the required content is loading on the main URL https://<LBR-URL> i.e there should not be a sub-directory like https://<LBR-URL>/web_app etc.
 
 ## 🔹 Step 1: Access Jenkins & Gitea UI
 
@@ -67,27 +74,27 @@ The pipeline must clone and deploy only the selected branch to `/var/www/html`, 
 
 **Steps**:  
 ```bash
-ssh natasha@ststor01
+ssh sarah@stapp01  #ssh with sarah username as the homedirectory mentioned is /home/sarah/jenkins_agent and /var/www/html belongs to that user
 ```
 ```bash
 # Install Java
-sudo yum install java-21-openjdk -y
+sudo yum install java-17-openjdk -y  #jdk version 17 for this case, try to find exact supported versions for other cases
 java -version
 ```
 ```bash
-# Fix ownership - Add these steps in all day 75,76,77 etc
-sudo chown -R natasha:natasha /var/www/html     #Grant Ownership of the Agent Directory to natasha
-sudo chmod -R 755 /var/www/html    #Ensure Permissions Allow Writing
-sudo chmod 755 /var/www         #Allow Directory Traversal
+Verify whether the root directory mentione is accessible to user sarah
+
+ls -ld /home/sarah/jenkins_agent
 ls -ld /var/www/html
+
 ```
 ```bash
 exit
 ```
 
 **Success Indicators**:  
-- ✅ Java 21 installed.  
-- ✅ `/var/www/html` owned by natasha.
+- ✅ Java 17 installed.  
+- ✅ `/var/www/html` owned by sarah.
 
 ---
 
@@ -100,34 +107,34 @@ exit
 1. **Manage Jenkins** → **Credentials** → **System** → **Global**.  
 2. **Add Credentials** → **Username with password**.  
 3. Enter:  
-   - **Username**: `natasha`  
-   - **Password**: `Bl@kW`  
-   - **ID**: `ststor01`  
-   - **Description**: `Storage Server Access`  
+   - **Username**: `sarah`  
+   - **Password**: `Sarah_pass123`  
+   - **ID**: `stapp01`  
+   - **Description**: `Application Server Access`  
 4. Click **OK**.
 
 **Success Indicators**:  
-- ✅ Credential ID: `ststor01`.
+- ✅ Credential ID: `stapp01`.
 
 ---
 
 ## 🔹 Step 5: Add Storage Server as SSH Agent
 
-**Action**: Register `ststor01` as Jenkins slave.  
+**Action**: Register `stapp01` as Jenkins slave.  
 **Purpose**: Run pipeline on correct host.
 
 **Steps**:  
 1. **Manage Jenkins** → **Nodes** → **New Node**.  
 2. Enter:  
-   - **Node name**: `Storage Server`  
+   - **Node name**: `App Server 1`  
    - **Type**: `Permanent Agent`  
 3. Click **OK**.  
 4. Configure:  
-   - **Remote root directory**: `/var/www/html`  
-   - **Labels**: `ststor01`  
+   - **Remote root directory**: `/home/sarah/jenkins_agent`  
+   - **Labels**: `stapp01`  
    - **Launch method**: `Launch agent via SSH`  
-   - **Host**: `ststor01`  
-   - **Credentials**: `ststor01`  
+   - **Host**: `stapp01`  
+   - **Credentials**: `stapp01`  
    - **Host Key Verification Strategy**: `Non verifying Verification Strategy`  
 5. Click **Save**.
 
@@ -159,21 +166,22 @@ pipeline {
     agent { label 'stapp01' }
 
     parameters {
-        string(name: 'BRANCH', defaultValue: 'master')
+        string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to deploy')
     }
 
     stages {
         stage('Deploy') {
             steps {
-                sh '''
-                    echo 'Bl@kW' | sudo -S git -C /var/www/html fetch origin
-                    echo 'Bl@kW' | sudo -S git -C /var/www/html checkout $BRANCH
-                    echo 'Bl@kW' | sudo -S git -C /var/www/html reset --hard origin/$BRANCH
-                '''
+                sh """
+                cd /var/www/html
+                git checkout ${params.BRANCH}
+                git pull origin ${params.BRANCH}
+                """
             }
         }
     }
 }
+
 ```
 
 6. Click **Save**.
@@ -278,28 +286,16 @@ pipeline {
     stages {
         stage('Deploy') {
             steps {
-                sh '''
-                    cd /var/www/html
-
-                    # Force clean local changes and untracked files
-                    git reset --hard
-                    git clean -fd
-
-                    # Fetch updates and switch to target branch
-                    git fetch origin
-                    git checkout ${BRANCH}
-                    git reset --hard origin/${BRANCH}
-
-                    # Maintain proper ownership for tony and web server
-                    sudo chown -R tony:tony /var/www/html
-                    sudo chmod -R 755 /var/www/html
-
-                    ls -la /var/www/html
-                '''
+                sh """
+                cd /var/www/html
+                git checkout ${params.BRANCH}
+                git pull origin ${params.BRANCH}
+                """
             }
         }
     }
 }
+
 ```
 
 **Parameter**:  
