@@ -14,7 +14,7 @@ The **Nautilus DevOps team** wants automatic deployment of the web app whenever 
   - Git SCM: `http://git.stratos.xfusioncorp.com/sarah/web.git`  
   - Branch: `*/master`  
   - Trigger: Poll SCM → `* * * * *`  
-  - Deploy: Copy all files to `/var/www/html` on Storage Server  
+  - Deploy: Copy all files to `/var/www/html` on App Server 1 
 - **Ownership**: `/var/www/html` → `sarah:sarah`  
 - **Final URL**: `https://<LBR-URL>` → No subfolder  
 - **Content**: `Welcome to the xFusionCorp Industries`
@@ -32,130 +32,42 @@ The **Nautilus DevOps team** wants automatic deployment of the web app whenever 
 1. **Manage Jenkins** → **Plugins** → **Available**.  
 2. Install:  
    - **Publish Over SSH**  
-   - **SSH Credentials**  
+   - **SSH Credentials**
+   - **Git**
+   - **SSH Build Agents**
 3. **Restart Jenkins**.
 
 **Success Indicators**:  
 - ✅ Plugins active.
 
----
-
-### **Step 1.2: Add SSH Credentials for App Servers**
-
-**Steps**:  
-1. **Manage Jenkins** → **Credentials** → **System** → **Global**.  
-2. Add **3 credentials**:  
-
-| **Host** | **Username** | **Password** | **ID** |
-|----------|--------------|--------------|--------|
-| stapp01 | tony | Ir0nM@n | stapp01 |
-| stapp02 | steve | Am3ric@ | stapp02 |
-| stapp03 | banner | BigGr33n | stapp03 |
-
-**Success Indicators**:  
-- ✅ All 3 saved.
-
----
-
-### **Step 1.3: Configure SSH Servers**
-
-**Steps**:  
-1. **Manage Jenkins** → **System** → **Publish Over SSH**.  
-2. Add **3 servers**:  
-
-| **Name** | **Hostname** | **Port** | **Username** | **Credentials** |
-|----------|--------------|----------|--------------|-----------------|
-| stapp01 | stapp01.stratos.xfusioncorp.com | 22 | tony | stapp01 |
-| stapp02 | stapp02.stratos.xfusioncorp.com | 22 | steve | stapp02 |
-| stapp03 | stapp03.stratos.xfusioncorp.com | 22 | banner | stapp03 |
-
-3. **Test Connection** → Success
-
-**Success Indicators**:  
-- ✅ All 3 connections **Success**.
-
----
 
 ### **Step 1.4: Create apache-install-job**
 
-**Steps**:  
-1. **New Item** → `apache-install-job` → **Freestyle project**.  
-2. **Build** → **Add build step** → **Send files or execute commands over SSH**.  
-3. Add **3 steps** (one per server):  
-
-**For stapp01**:  
-```bash
-echo "Installing Apache on stapp01..."
-echo 'Ir0nM@n' | sudo -S yum install -y httpd
-echo 'Ir0nM@n' | sudo -S sed -i 's/Listen 80/Listen 8080/' /etc/httpd/conf/httpd.conf
-echo 'Ir0nM@n' | sudo -S systemctl enable httpd
-echo 'Ir0nM@n' | sudo -S systemctl restart httpd
-```
-
-**For stapp02**:  
-```bash
-echo "Installing Apache on stapp02..."
-echo 'Am3ric@' | sudo -S yum install -y httpd
-echo 'Am3ric@' | sudo -S sed -i 's/Listen 80/Listen 8080/' /etc/httpd/conf/httpd.conf
-echo 'Am3ric@' | sudo -S systemctl enable httpd
-echo 'Am3ric@' | sudo -S systemctl restart httpd
-```
-
-**For stapp03**:  
-```bash
-echo "Installing Apache on stapp03..."
-echo 'BigGr33n' | sudo -S yum install -y httpd
-echo 'BigGr33n' | sudo -S sed -i 's/Listen 80/Listen 8080/' /etc/httpd/conf/httpd.conf
-echo 'BigGr33n' | sudo -S systemctl enable httpd
-echo 'BigGr33n' | sudo -S systemctl restart httpd
-```
-
-4. **Save** → **Build Now**.
-
-**Success Indicators**:  
-- ✅ All 3 commands succeed.  
-- ✅ Apache running on port 8080.
-
----
-
 ## 🔹 PART 2: Configure Auto-Deployment Job
-
-### **Step 2.1: Install Git & SSH Build Agents**
-
-**Steps**:  
-1. **Manage Plugins** → Install:  
-   - **Git**  
-   - **SSH Build Agents**  
-2. **Restart Jenkins**.
-
----
 
 ### **Step 2.2: Set Up Passwordless SSH (Jenkins → Storage Server)**
 
 **On Jenkins Server**:  
 ```bash
 ssh jenkins@jenkins
-sudo su - jenkins
+sudo su 
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
 cat ~/.ssh/id_rsa.pub
+#copy the public key
 ```
 
-**On Storage Server**:  
+**On App Server**:  
 ```bash
-ssh natasha@ststor01
-sudo su - sarah
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-vi ~/.ssh/authorized_keys
+ssh sarah@stapp01
+sudo su 
+vi /.ssh/authorized_keys
 # Paste Jenkins public key
-chmod 600 ~/.ssh/authorized_keys
+chmod 600 /.ssh/authorized_keys
 ```
 
 **Test**:  
 ```bash
-ssh sarah@ststor01 -i /var/lib/jenkins/.ssh/id_rsa
-```
-
+ssh sarah@stapp01
 **Success Indicators**:  
 - ✅ No password prompt.
 
@@ -165,7 +77,7 @@ ssh sarah@ststor01 -i /var/lib/jenkins/.ssh/id_rsa
 
 **On Storage Server**:  
 ```bash
-ssh natasha@ststor01
+ssh sarah@stapp01
 sudo chown -R sarah:sarah /var/www/html
 ls -ld /var/www/html
 ```
@@ -192,7 +104,7 @@ drwxr-xr-x 3 sarah sarah ... /var/www/html
    echo "Deploying to Storage Server..."
    scp -o StrictHostKeyChecking=no \
        -i /var/lib/jenkins/.ssh/id_rsa \
-       * sarah@ststor01:/var/www/html/
+       * sarah@stapp01:/var/www/html/
    echo "Deployment complete."
 ```  
 5. **Save**.
@@ -206,13 +118,13 @@ drwxr-xr-x 3 sarah sarah ... /var/www/html
 
 ### **Step 3.1: Update index.html and Push**
 
-**On Storage Server**:  
+**On App Server**:  
 ```bash
-ssh sarah@ststor01
-cd ~/web
-cat > index.html
-Welcome to the xFusionCorp Industries
-# Press Ctrl+D
+ssh sarah@stapp01
+cd /home/sarah/web
+vi index.html
+Paste this - Welcome to the xFusionCorp Industries
+
 git add .
 git commit -m "Updated index.html"
 git push origin master
