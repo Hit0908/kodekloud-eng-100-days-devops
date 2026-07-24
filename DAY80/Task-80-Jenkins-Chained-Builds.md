@@ -88,7 +88,7 @@ Configure in Jenkins:
 - ✅ All 3 show **Success**.
 
 ---
- ###  ***$\diamond$ Passwordless `sudo` rights for Apache***
+ ###  $\diamond$ ***Passwordless `sudo` rights for Apache***
 
 Step 1: Log into App Server 1
     
