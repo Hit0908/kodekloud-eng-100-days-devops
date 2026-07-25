@@ -22,14 +22,13 @@ The **xFusionCorp Industries** team wants a robust **Jenkins Pipeline** to deplo
 
 ### **Step 1.1: Install Required Plugins**
 
-**Action**: Install Pipeline and Credentials plugins.  
-**Purpose**: Enable pipeline jobs and secure auth.
+**Action**: Install Pipeline plugin.  
+**Purpose**: Enable pipeline jobs.
 
 **Steps**:  
 1. **Manage Jenkins** → **Plugins** → **Available**.  
 2. Install:  
-   - **Pipeline**  
-   - **Credentials Binding**  
+   - **Pipeline**   
 3. **Restart Jenkins**.
 
 **Success Indicators**:  
@@ -37,23 +36,18 @@ The **xFusionCorp Industries** team wants a robust **Jenkins Pipeline** to deplo
 
 ---
 
-### **Step 1.2: Add Storage Server Credentials**
-
-**Action**: Store natasha credentials securely.  
-**Purpose**: Use in pipeline with `withCredentials`.
-
 **Steps**:  
 1. **Manage Jenkins** → **Credentials** → **System** → **Global**.  
 2. **Add Credentials** → **Username with password**.  
 3. Enter:  
-   - **Username**: `natasha`  
-   - **Password**: `Bl@kW`  
-   - **ID**: `ststor01`  
+   - **Username**: `sarah`  
+   - **Password**: `Sarah_pass123`  
+   - **ID**: `stapp01`  
    - **Description**: `Storage Server SSH Access`  
 4. Click **OK**.
 
 **Success Indicators**:  
-- ✅ Credential ID: `ststor01`.
+- ✅ Credential ID: `stapp01`.
 
 ---
 
@@ -72,7 +66,7 @@ The **xFusionCorp Industries** team wants a robust **Jenkins Pipeline** to deplo
 ```
    Welcome to xFusionCorp Industries
 ```  
-5. **Commit changes** → **Commit to master**
+5. **Commit changes** → **Commit to master** Inside Gitea website
 
 **Success Indicators**:  
 - ✅ Commit visible in Gitea.
@@ -98,68 +92,26 @@ The **xFusionCorp Industries** team wants a robust **Jenkins Pipeline** to deplo
 2. Paste exact script:  
 ```groovy
 pipeline {
-    agent any
-
-    environment {
-        GIT_REPO = 'http://git.stratos.xfusioncorp.com/sarah/web.git'
-        REMOTE_HOST = 'ststor01'
-        REMOTE_PATH = '/var/www/html'
-        LB_URL = 'http://stlb01:8091'
+    agent {
+        label 'stapp01'
     }
 
     stages {
-        stage('Deploy') {
+        
+        stage ('Deploy') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'ststor01', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        sh """
-                            echo "Deploying to Storage Server..."
-                            sshpass -p "\$PASS" ssh -o StrictHostKeyChecking=no \$USER@\$REMOTE_HOST "
-                                cd \$REMOTE_PATH && 
-                                git pull origin master
-                            "
-                            echo "Deployment complete."
-                        """
-                    }
+                    sh "cd /var/www/html && git pull origin master"
                 }
             }
         }
-
-        stage('Test') {
+        
+        stage ('Test') {
             steps {
                 script {
-                    sh """
-                        echo "Testing website accessibility..."
-                        response=\$(curl -s -o /dev/null -w "%{http_code}" \$LB_URL)
-
-                        if [ \$response -eq 200 ]; then
-                            echo "Website is accessible. HTTP Status: \$response"
-
-                            echo "Verifying content..."
-                            curl -s \$LB_URL | grep -q "Welcome to xFusionCorp Industries"
-
-                            if [ \$? -eq 0 ]; then
-                                echo "Content verification successful!"
-                            else
-                                echo "Content verification failed!"
-                                exit 1
-                            fi
-                        else
-                            echo "Website is not accessible. HTTP Status: \$response"
-                            exit 1
-                        fi
-                    """
+                    sh "curl -f http://stlb01:8091 "
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Deployment and testing completed successfully!'
-        }
-        failure {
-            echo 'Deployment or testing failed. Check the logs above.'
         }
     }
 }
