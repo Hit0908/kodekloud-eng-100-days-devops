@@ -59,18 +59,18 @@ vi variables.tf
 **Content**:  
 ```hcl
 variable "KKE_TABLE_NAME" {
-  description = "Name of the DynamoDB table"
   type        = string
+  description = "Name of the DynamoDB table"
 }
 
 variable "KKE_ROLE_NAME" {
-  description = "Name of the IAM role"
   type        = string
+  description = "Name of the IAM role"
 }
 
 variable "KKE_POLICY_NAME" {
-  description = "Name of the IAM policy"
   type        = string
+  description = "Name of the IAM policy"
 }
 ```
 
@@ -83,9 +83,9 @@ vi terraform.tfvars
 
 **Content**:  
 ```hcl
-KKE_TABLE_NAME     = "nautilus-table"
-KKE_ROLE_NAME      = "nautilus-role"
-KKE_POLICY_NAME    = "nautilus-readonly-policy"
+KKE_TABLE_NAME  = "nautilus-table"
+KKE_ROLE_NAME   = "nautilus-role"
+KKE_POLICY_NAME = "nautilus-readonly-policy"
 ```
 
 ---
@@ -97,21 +97,27 @@ vi main.tf
 
 **Content**:  
 ```hcl
-# Configure AWS Provider
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 provider "aws" {
   region = "us-east-1"
 }
 
-# -------------------------
-# DynamoDB Table (Minimal)
-# -------------------------
+# 1. DynamoDB Table (Minimal configuration with PAY_PER_REQUEST billing)
 resource "aws_dynamodb_table" "nautilus_table" {
-  name           = var.KKE_TABLE_NAME
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "ID"
+  name         = var.KKE_TABLE_NAME
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
-    name = "ID"
+    name = "id"
     type = "S"
   }
 
@@ -120,9 +126,7 @@ resource "aws_dynamodb_table" "nautilus_table" {
   }
 }
 
-# -------------------------
-# IAM Role (Trusted by EC2)
-# -------------------------
+# 2. IAM Role for AWS trusted services (e.g., EC2)
 resource "aws_iam_role" "nautilus_role" {
   name = var.KKE_ROLE_NAME
 
@@ -130,11 +134,11 @@ resource "aws_iam_role" "nautilus_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
         Principal = {
           Service = "ec2.amazonaws.com"
         }
-        Action    = "sts:AssumeRole"
       }
     ]
   })
@@ -144,35 +148,35 @@ resource "aws_iam_role" "nautilus_role" {
   }
 }
 
-# -------------------------
-# IAM Policy: Read-only on specific table
-# -------------------------
-resource "aws_iam_policy" "nautilus_policy" {
+# 3. Read-Only Policy restricted to the specific DynamoDB Table
+resource "aws_iam_policy" "nautilus_readonly_policy" {
   name        = var.KKE_POLICY_NAME
-  description = "Read-only access to the ${var.KKE_TABLE_NAME} DynamoDB table"
+  description = "Read-only access restricted to nautilus-table DynamoDB table"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "dynamodb:GetItem",
-          "dynamodb:Scan",
-          "dynamodb:Query"
+          "dynamodb:BatchGetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
         ]
-        Resource = aws_dynamodb_table.nautilus_table.arn
+        Resource = [
+          aws_dynamodb_table.nautilus_table.arn,
+          "${aws_dynamodb_table.nautilus_table.arn}/index/*"
+        ]
       }
     ]
   })
 }
 
-# -------------------------
-# Attach Policy to Role
-# -------------------------
-resource "aws_iam_role_policy_attachment" "nautilus_attach" {
+# 4. Attach Policy to Role
+resource "aws_iam_role_policy_attachment" "nautilus_attach_policy" {
   role       = aws_iam_role.nautilus_role.name
-  policy_arn = aws_iam_policy.nautilus_policy.arn
+  policy_arn = aws_iam_policy.nautilus_readonly_policy.arn
 }
 ```
 
@@ -186,18 +190,18 @@ vi outputs.tf
 **Content**:  
 ```hcl
 output "kke_dynamodb_table" {
-  description = "Name of the DynamoDB table"
   value       = aws_dynamodb_table.nautilus_table.name
+  description = "Name of the DynamoDB table"
 }
 
 output "kke_iam_role_name" {
-  description = "Name of the IAM role"
   value       = aws_iam_role.nautilus_role.name
+  description = "Name of the IAM role"
 }
 
 output "kke_iam_policy_name" {
+  value       = aws_iam_policy.nautilus_readonly_policy.name
   description = "Name of the IAM policy"
-  value       = aws_iam_policy.nautilus_policy.name
 }
 ```
 
