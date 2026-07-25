@@ -87,12 +87,12 @@ cat inventory
           server_name example.com;
           port 8080;
 
-After running this task, Ansible adds:
+After running this task, Ansible adds below lines into the playbook file:
 
-# BEGIN ANSIBLE MANAGED BLOCK
 server_name example.com;
 port 8080;
-# END ANSIBLE MANAGED BLOCK
+
+
 **Expected**:  
 
 ```ini
