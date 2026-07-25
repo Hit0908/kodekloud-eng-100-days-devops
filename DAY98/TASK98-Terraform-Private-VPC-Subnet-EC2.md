@@ -4,11 +4,11 @@
 The **Nautilus DevOps team** is building a **secure, private AWS environment**:
 
 **Goal**:
-- **VPC**: `xfusion-priv-vpc` → `10.0.0.0/16`  
-- **Subnet**: `xfusion-priv-subnet` → `10.0.1.0/24` → **No public IP**  
-- **EC2**: `xfusion-priv-ec2` → `t2.micro` → **Private only**  
+- **VPC**: `devops-priv-vpc` → `10.0.0.0/16`  
+- **Subnet**: `devops-priv-subnet` → `10.0.1.0/24` → **No public IP**  
+- **EC2**: `devops-priv-ec2` → `t2.micro` → **Private only**  
 - **Security Group**: Allow only VPC CIDR (`10.0.0.0/16`)  
-- Use `variables.tf`, `terraform.tfvars`, `outputs.tf`  
+- Use `variables.tf`, `outputs.tf`  
 - All in `/home/bob/terraform`
 
 ---
@@ -17,9 +17,9 @@ The **Nautilus DevOps team** is building a **secure, private AWS environment**:
 
 | **Resource** | **Name** | **CIDR** | **Public IP** | **SG Rule** |
 |--------------|----------|----------|---------------|-------------|
-| VPC | xfusion-priv-vpc | 10.0.0.0/16 | — | — |
-| Subnet | xfusion-priv-subnet | 10.0.1.0/24 | Disabled | — |
-| EC2 | xfusion-priv-ec2 | — | — | VPC CIDR only |
+| VPC | devops-priv-vpc | 10.0.0.0/16 | — | — |
+| Subnet | devops-priv-subnet | 10.0.1.0/24 | Disabled | — |
+| EC2 | devops-priv-ec2 | — | — | VPC CIDR only |
 
 ---
 
@@ -58,50 +58,57 @@ vi main.tf
 **Content**:  
 ```hcl
 # Configure AWS Provider
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 provider "aws" {
-  region = "us-east-1"
+  region = "us-east-1" # Adjust region if required by your environment
 }
 
-# -------------------------
-# VPC
-# -------------------------
-resource "aws_vpc" "xfusion_priv_vpc" {
-  cidr_block = var.KKE_VPC_CIDR
+# 1. VPC
+resource "aws_vpc" "devops_priv_vpc" {
+  cidr_block           = var.KKE_VPC_CIDR
+  enable_dns_hostnames = true
+  enable_dns_support   = true
 
   tags = {
-    Name = "xfusion-priv-vpc"
+    Name = "devops-priv-vpc"
   }
 }
 
-# -------------------------
-# Subnet (Private - no public IP)
-# -------------------------
-resource "aws_subnet" "xfusion_priv_subnet" {
-  vpc_id                  = aws_vpc.xfusion_priv_vpc.id
+# 2. Subnet
+resource "aws_subnet" "devops_priv_subnet" {
+  vpc_id                  = aws_vpc.devops_priv_vpc.id
   cidr_block              = var.KKE_SUBNET_CIDR
-  map_public_ip_on_launch = false  # Explicitly disabled
+  map_public_ip_on_launch = false
 
   tags = {
-    Name = "xfusion-priv-subnet"
+    Name = "devops-priv-subnet"
   }
 }
 
-# -------------------------
-# Security Group - Allow only VPC-internal traffic
-# -------------------------
-resource "aws_security_group" "xfusion_priv_sg" {
-  name        = "xfusion-priv-sg"
-  description = "Allow internal VPC communication only"
-  vpc_id      = aws_vpc.xfusion_priv_vpc.id
+# 3. Security Group (Allows inbound traffic only from within the VPC CIDR)
+resource "aws_security_group" "devops_priv_sg" {
+  name        = "devops-priv-sg"
+  description = "Allow inbound traffic from VPC CIDR only"
+  vpc_id      = aws_vpc.devops_priv_vpc.id
 
   ingress {
+    description = "Allow traffic from within VPC CIDR"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = [var.KKE_VPC_CIDR]  # Only from VPC
+    cidr_blocks = [var.KKE_VPC_CIDR]
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -109,21 +116,30 @@ resource "aws_security_group" "xfusion_priv_sg" {
   }
 
   tags = {
-    Name = "xfusion-priv-sg"
+    Name = "devops-priv-sg"
   }
 }
 
-# -------------------------
-# EC2 Instance in private subnet
-# -------------------------
-resource "aws_instance" "xfusion_priv_ec2" {
-  ami           = "ami-0c101f26f147fa7fd"
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.xfusion_priv_subnet.id
-  vpc_security_group_ids = [aws_security_group.xfusion_priv_sg.id]
+# Fetch latest Amazon Linux 2 AMI
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
+# 4. EC2 Instance
+resource "aws_instance" "devops_priv_ec2" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.devops_priv_subnet.id
+  vpc_security_group_ids = [aws_security_group.devops_priv_sg.id]
 
   tags = {
-    Name = "xfusion-priv-ec2"
+    Name = "devops-priv-ec2"
   }
 }
 ```
@@ -138,29 +154,19 @@ vi variables.tf
 **Content**:  
 ```hcl
 variable "KKE_VPC_CIDR" {
-  description = "CIDR block for VPC"
   type        = string
+  default     = "10.0.0.0/16"
+  description = "CIDR block for devops-priv-vpc"
 }
 
 variable "KKE_SUBNET_CIDR" {
-  description = "CIDR block for subnet"
   type        = string
+  default     = "10.0.1.0/24"
+  description = "CIDR block for devops-priv-subnet"
 }
 ```
 
 ---
-
-### **Step 5: Create `terraform.tfvars`**
-```bash
-vi terraform.tfvars
-```
-
-**Content**:  
-```hcl
-KKE_VPC_CIDR    = "10.0.0.0/16"
-KKE_SUBNET_CIDR = "10.0.1.0/24"
-```
-
 ---
 
 ### **Step 6: Create `outputs.tf`**
@@ -171,15 +177,18 @@ vi outputs.tf
 **Content**:  
 ```hcl
 output "KKE_vpc_name" {
-  value = aws_vpc.xfusion_priv_vpc.tags.Name
+  value       = aws_vpc.devops_priv_vpc.tags["Name"]
+  description = "Name of the VPC"
 }
 
 output "KKE_subnet_name" {
-  value = aws_subnet.xfusion_priv_subnet.tags.Name
+  value       = aws_subnet.devops_priv_subnet.tags["Name"]
+  description = "Name of the Subnet"
 }
 
 output "KKE_ec2_private" {
-  value = aws_instance.xfusion_priv_ec2.tags.Name
+  value       = aws_instance.devops_priv_ec2.tags["Name"]
+  description = "Name of the EC2 Instance"
 }
 ```
 
@@ -195,10 +204,10 @@ terraform apply -auto-approve
 
 **Expected Output**:  
 ```
-+ create aws_vpc.xfusion_priv_vpc
-+ create aws_subnet.xfusion_priv_subnet
-+ create aws_security_group.xfusion_priv_sg
-+ create aws_instance.xfusion_priv_ec2
++ create aws_vpc.devops_priv_vpc
++ create aws_subnet.devops_priv_subnet
++ create aws_security_group.devops_priv_sg
++ create aws_instance.devops_priv_ec2
 
 Apply complete! Resources: 4 added.
 ```
