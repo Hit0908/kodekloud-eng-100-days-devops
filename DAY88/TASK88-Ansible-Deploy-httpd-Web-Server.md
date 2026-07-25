@@ -72,7 +72,29 @@ cd /home/thor/ansible
 cat inventory
 ```
 
+### **Step: blockinfile. What is blockinfile?***
+
+     I think you mean blockinfile (not "blockerinfile"). It is an Ansible module used to insert, update, or remove a block of text inside a file on remote hosts.
+
+    It is useful when you want Ansible to manage a specific section of a configuration file without replacing the entire file.
+
+   Basic example:
+   
+    - name: Add a block of text
+      blockinfile:
+        path: /etc/example.conf
+        block: |
+          server_name example.com;
+          port 8080;
+
+After running this task, Ansible adds:
+
+# BEGIN ANSIBLE MANAGED BLOCK
+server_name example.com;
+port 8080;
+# END ANSIBLE MANAGED BLOCK
 **Expected**:  
+
 ```ini
 stapp01 ansible_host=172.16.238.10 ansible_user=tony ansible_ssh_pass=Ir0nM@n
 stapp02 ansible_host=172.16.238.11 ansible_user=steve ansible_ssh_pass=Am3ric@
