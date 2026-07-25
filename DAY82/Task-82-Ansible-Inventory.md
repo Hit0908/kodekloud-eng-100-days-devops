@@ -36,7 +36,7 @@ cd /home/thor/playbook
 
 ---
 
-## 🔹 Step 2: Create INI Inventory File
+## 🔹 Step 2: Create INI Inventory File - In jumphost itself
 
 **Action**: Create `/home/thor/playbook/inventory` with correct host and vars.  
 **Purpose**: Enable Ansible to connect to `stapp03`.
@@ -48,7 +48,7 @@ vi /home/thor/playbook/inventory
 
 **Paste exactly**:  
 ```ini
-stapp03 ansible_host=172.16.238.12 ansible_user=banner ansible_ssh_pass=BigGr33n
+
 ```
 
 **Save & Exit**:  
@@ -69,7 +69,8 @@ cat /home/thor/playbook/inventory
 
 **Expected Output**:  
 ```ini
-stapp03 ansible_host=172.16.238.12 ansible_user=banner ansible_ssh_pass=BigGr33n
+stapp03 ansible_host=10.244.226.160 ansible_user=banner ansible_ssh_pass=BigGr33n
+#found staapp03 ip from logging in to stapp03 and ran cat /etc/hosts | grep stapp03 to find its IP
 ```
 
 **Success Indicators**:  
@@ -86,7 +87,7 @@ stapp03 ansible_host=172.16.238.12 ansible_user=banner ansible_ssh_pass=BigGr33n
 
 **Steps**:  
 ```bash
-ansible stapp03 -i inventory -m ping
+cd /home/thor/playbook ansible stapp03 -i /home/thor/playbook/inventory -m ping
 ```
 
 **Expected Output**:  
@@ -143,7 +144,7 @@ ansible stapp03 -i inventory -m shell -a "sudo systemctl status httpd"
 **Path**: `/home/thor/playbook/inventory`  
 **Content**:  
 ```ini
-stapp03 ansible_host=172.16.238.12 ansible_user=banner ansible_ssh_pass=BigGr33n
+stapp03 ansible_host= ansible_user10.244.226.160=banner ansible_ssh_pass=BigGr33n
 ```
 
 ---
