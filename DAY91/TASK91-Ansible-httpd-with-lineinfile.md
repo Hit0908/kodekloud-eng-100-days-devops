@@ -110,7 +110,16 @@ vi playbook.yml
 - ✅ `insertbefore: BOF` → Beginning Of File  
 - ✅ `owner`, `group`, `mode` on both tasks  
 - ✅ `content:` with `|` → multi-line
+- when you want to manage one line at a time without replacing the entire file.
 
+Example 1: Add a line if it doesn't exist
+         
+         - name: Add a DNS server
+           lineinfile:
+             path: /etc/resolv.conf
+             line: "nameserver 8.8.8.8"
+
+If the line is already present, Ansible does nothing. If it's missing, Ansible adds it.
 ---
 
 ### **Step 4: Run Playbook**
