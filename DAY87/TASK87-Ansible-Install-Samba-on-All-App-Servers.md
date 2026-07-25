@@ -36,6 +36,11 @@ The **Nautilus Application team** needs **samba** installed on all **3 App Serve
 
 ## 📝 Solution Overview
 
+/home/thor/playbook/
+├── inventory
+├── playbook.yml
+└── ansible.cfg
+
 ### **Strategy**
 - Use `yum` module with `state: present` → idempotent install
 - `become: yes` → root privileges
@@ -94,6 +99,21 @@ vi playbook.yml
 ```
 
 **Save & Exit**: `Esc` → `:wq` → `Enter`
+
+### **create ansible config file (ansible.cfg)
+
+    vi ansible.cfg 
+
+      ```[defaults]
+         host_key_checking = False```
+
+###By default, Ansible has:
+
+               host_key_checking = True
+
+This means Ansible asks SSH to verify that the remote server's fingerprint is already trusted (present in ~/.ssh/known_hosts).
+In this task servers are not known to the "known_hosts" and sshpass cannot handle interactive fingerprint confirmation.
+ Hence we use ```host_key_checking = False``` This means: "Do not stop and ask for SSH host fingerprint confirmation."
 
 ---
 
